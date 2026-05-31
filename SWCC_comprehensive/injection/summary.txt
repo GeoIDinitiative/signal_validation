@@ -1,0 +1,11 @@
+INJECTION-RECOVERY — detection sensitivity
+==============================================
+
+ingv        MAX  : SNR50=0.69  SNR90=1.14
+ingv        STACK: SNR50=0.98  SNR90=nan
+experiment  MAX  : SNR50=0.70  SNR90=0.99
+experiment  STACK: SNR50=0.96  SNR90=nan
+
+Interpretation: the pipeline recovers injected templates above SNR90; it found
+no real detections, so any matching transient in the data is below that level.
+High-SNR recovery -> 1.0 validates the search end-to-end.

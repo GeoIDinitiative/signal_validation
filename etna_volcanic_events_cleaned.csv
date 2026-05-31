@@ -1,0 +1,27 @@
+Date,Time,End Date,End Time,Phase,Event_Type
+2022-11-27,18:00:00,2022-11-30,12:30:00,start,Eruptive
+2022-11-27,18:00:00,2022-11-27,18:00:00,start,Vent Opening
+2022-11-27,18:30:00,2023-01-17,17:00:00,start,Effusive
+2022-11-27,18:30:00,2022-11-27,18:30:00,start,Lava Flow
+2022-11-30,12:00:00,2022-11-30,12:00:00,start,Vent Opening
+2022-11-30,12:30:00,2022-11-30,12:30:00,start,Lava Flow
+2022-12-07,12:00:00,2022-12-07,12:00:00,start,Hornito Formation
+2022-12-07,12:00:00,2022-12-18,12:00:00,start,Hornito Activity
+2022-12-25,12:00:00,2022-12-25,12:00:00,start,Lava Flow Advance
+2023-01-07,12:00:00,2023-01-07,12:00:00,start,Lava Flow Advance
+2023-01-16,18:00:00,2023-01-16,18:00:00,stop,Effusion Decrease
+2023-01-17,17:00:00,2023-01-17,17:00:00,stop,Effusion Stop
+2023-01-18,06:00:00,2023-02-02,09:00:00,start,Effusive
+2023-01-20,12:00:00,2023-01-20,12:00:00,start,Lava Flow Advance
+2023-01-21,12:00:00,2023-01-21,12:00:00,start,Variable Effusion
+2023-01-22,19:00:00,2023-01-22,19:00:00,start,Lava Flow Advance
+2023-01-26,12:00:00,2023-01-26,12:00:00,start,Ash Emission
+2023-01-26,12:00:00,2023-01-26,12:00:00,start,Degassing
+2023-01-30,20:00:00,2023-01-30,20:00:00,start,Incandescence
+2023-02-01,06:00:00,2023-02-01,06:00:00,start,Effusion Increase
+2023-02-01,22:00:00,2023-02-01,22:00:00,stop,Effusion Decrease
+2023-02-02,09:00:00,2023-02-02,09:00:00,stop,Effusion Stop
+2023-02-02,14:00:00,2023-02-06,12:00:00,start,Effusion
+2023-02-04,15:00:00,2023-02-04,15:00:00,stop,Effusion Decrease
+2023-02-05,12:00:00,2023-02-05,12:00:00,stop,Cooling Begins
+2023-02-06,12:00:00,2023-02-06,12:00:00,stop,Effusion End

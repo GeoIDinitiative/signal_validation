@@ -1,0 +1,28 @@
+DATA-DRIVEN CONTAMINATION AUDIT — does anything escape the catalogue veto INTO our band?
+====================================================================================
+out-band EQ monitor (0.01, 0.1) Hz ; IN-BAND monitor (0.001, 0.01) Hz (templates) ; trigger>4.0
+
+(a) catalogue completeness — % of out-of-band data anomalies near a catalogued EQ:
+    ingv        ECPN :  91% (1058/1164)
+    ingv        EEC1 :  91% (1009/1107)
+    experiment  EC1  :  86% (185/216)
+    experiment  EC10 :  81% (29/36)
+    experiment  ECIT :  83% (59/71)
+    experiment  ECOR :  89% (133/150)
+    experiment  EMAS :  85% (17/20)
+
+(b) IN-BAND anomalies (what reaches the 0.001-0.01 Hz template band), vs FULL veto:
+    station    in-band  covered:model  covered:data-driven  ESCAPES  data-only(signal)
+    ing/ECPN      48         27               20         0          1
+    ing/EEC1      76         23               47         0          6
+    exp/EC1        5          1                4         0          0
+    exp/EC10       2          0                1         0          1
+    exp/ECIT       2          1                0         0          1
+    exp/ECOR       2          1                1         0          0
+    exp/EMAS      10          1                9         0          0
+
+VERDICT (after data-driven veto):
+  earthquake-coincident in-band anomalies STILL escaping the veto: 0 of 145 (0%)
+  of which 82 were caught by the DATA-DRIVEN veto (model had missed them)
+  data-only in-band anomalies left unvetoed (real-signal candidates): 9
+  → escapes ≈ 0 confirms the veto now catches the contamination empirically, not by model assumption.

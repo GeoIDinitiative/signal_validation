@@ -1,0 +1,12 @@
+EEC1 (winter) vs EC1 (summer) — SAME borehole instrument, two campaigns
+==================================================================
+in-band horizontal background (raw)            winter/summer = 10.6×
+in-band horizontal background (de-thermalised) winter/summer = 8.9×
+thermal coupling r(tilt,na)   winter=+0.43  summer=+0.01
+digitisation step (LSB)       winter=0.005  summer=0.005  → SAME units (not a scale factor)
+
+STORY: same instrument/site; the winter/INGV record carries several× the in-band tilt background
+of the summer/experiment record, and it survives de-thermalising and the same-units (LSB) check —
+so it is REAL ground tilt, most plausibly seasonal meteorological loading, not instrumental. This
+noisier winter record is why EEC1's 90% detection upper limit is weaker than EC1's. (Early-window
+thermal coupling at EEC1 reaches ~42%; it is non-stationary, hence the smaller longest-block value.)

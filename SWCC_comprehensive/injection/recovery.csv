@@ -1,0 +1,17 @@
+dataset,snr,p_detect_max,p_detect_stack,n
+ingv,0.25,0.0375,0.025,80
+ingv,0.5,0.225,0.1625,80
+ingv,0.75,0.5875,0.2375,80
+ingv,1.0,0.8625,0.525,80
+ingv,1.5,1.0,0.7125,80
+ingv,2.0,1.0,0.85,80
+ingv,3.0,1.0,0.825,80
+ingv,5.0,1.0,0.8125,80
+experiment,0.25,0.0,0.025,80
+experiment,0.5,0.125,0.05,80
+experiment,0.75,0.6,0.2375,80
+experiment,1.0,0.9125,0.55,80
+experiment,1.5,1.0,0.5875,80
+experiment,2.0,1.0,0.725,80
+experiment,3.0,1.0,0.775,80
+experiment,5.0,1.0,0.8625,80

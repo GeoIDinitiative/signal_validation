@@ -1,0 +1,12 @@
+{
+  "dataset": "experiment",
+  "station": "EMAS",
+  "sim": "sim1",
+  "template": "template4",
+  "fs": 1.0,
+  "columns": [
+    "time_seconds",
+    "x"
+  ],
+  "source_meta": {}
+}

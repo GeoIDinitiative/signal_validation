@@ -1,0 +1,14 @@
+NETWORK MATCHED FILTER — coherent cross-station stack
+======================================================
+
+ingv: 2 stations  net_floor=0.410  single_floor=0.607
+
+experiment: 5 stations  net_floor=0.274  single_floor=0.582
+
+ingv        NETWORK : SNR50=0.39  SNR90=0.62
+ingv        single  : SNR50=0.63  SNR90=0.85
+experiment  NETWORK : SNR50=0.31  SNR90=0.46
+experiment  single  : SNR50=0.46  SNR90=0.69
+
+A lower NETWORK SNR90 than single-station = the coherent stack detects smaller
+tilt amplitudes (~sqrt(N) gain). This sets the deepest sensitivity floor of the search.

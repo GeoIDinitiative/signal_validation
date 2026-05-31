@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# logs / scratch
+*.log
+
+# Large regenerable data — exceeds GitHub's 100 MB/file limit.
+# Rebuild from the raw signals via stage 1 (build_clean_bandpassed_continuous.py).
+continuous_bandpassed/
+*.feather
+
+# Regenerable figure outputs — rebuild via run_pipeline.py.
+# (Result tables (.csv), reports (.md/.txt), and metadata (.json) are kept.)
+*.png

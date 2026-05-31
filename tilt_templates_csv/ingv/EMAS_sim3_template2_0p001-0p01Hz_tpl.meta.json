@@ -1,0 +1,12 @@
+{
+  "dataset": "ingv",
+  "station": "EMAS",
+  "sim": "sim3",
+  "template": "template2",
+  "fs": 1.0,
+  "columns": [
+    "time_seconds",
+    "x"
+  ],
+  "source_meta": {}
+}

@@ -1,0 +1,46 @@
+# Publication / thesis figure style for the tilt_validation pipeline.
+# matplotlib auto-loads this file because the pipeline runs every stage with cwd = tilt_validation.
+
+figure.facecolor   : white
+figure.dpi         : 120
+figure.titlesize   : 15
+figure.titleweight : bold
+
+savefig.dpi        : 300
+savefig.bbox       : tight
+savefig.pad_inches : 0.06
+savefig.facecolor  : white
+
+font.family        : sans-serif
+font.sans-serif    : DejaVu Sans, Arial, Helvetica
+font.size          : 12
+mathtext.default   : regular
+
+axes.titlesize     : 14
+axes.titleweight   : bold
+axes.titlepad      : 8
+axes.labelsize     : 12.5
+axes.labelweight   : bold
+axes.axisbelow     : True
+axes.linewidth     : 0.9
+axes.edgecolor     : 333333
+axes.facecolor     : white
+
+grid.color         : 9aa0a6
+grid.alpha         : 0.35
+grid.linewidth     : 0.6
+grid.linestyle     : -
+
+legend.fontsize    : 10
+legend.frameon     : True
+legend.framealpha  : 0.9
+legend.edgecolor   : cccccc
+legend.borderpad   : 0.4
+
+xtick.labelsize    : 10.5
+ytick.labelsize    : 10.5
+xtick.direction    : out
+ytick.direction    : out
+
+lines.linewidth    : 1.4
+image.cmap         : viridis

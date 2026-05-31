@@ -1,0 +1,12 @@
+{
+  "dataset": "experiment",
+  "station": "EC1",
+  "sim": "sim2",
+  "template": "template2",
+  "fs": 1.0,
+  "columns": [
+    "time_seconds",
+    "x"
+  ],
+  "source_meta": {}
+}

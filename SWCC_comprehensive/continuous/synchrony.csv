@@ -1,0 +1,5 @@
+dataset,method,n_stations,observed,chance,p
+ingv,max,2,2,0.862,0.213
+experiment,max,3,0,0.064,1.0
+ingv,stack,2,1,1.619,0.7995
+experiment,stack,4,0,0.123,1.0
