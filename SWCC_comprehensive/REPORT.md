@@ -7,7 +7,7 @@ denoise → SWCC plots → detection → injection → network → analysis → 
 - 85–98% of the post-earthquake record analysed (vs 28% in the old cut-first pipeline)
 
 ## Detections & significance
-- 436 per-station 'significant' windows (≈ the 1% chance rate of the 99th-pct floor)
+- 416 per-station 'significant' windows (≈ the 1% chance rate of the 99th-pct floor)
 - cross-station synchrony: smallest p = 0.213 → **no significant coincident signal**
 
 ## Sensitivity (experiment, SNR₉₀)

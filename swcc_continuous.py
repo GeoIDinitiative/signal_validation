@@ -227,7 +227,7 @@ def main():
             L.append(f"   {ds:11s}: observed={obs} chance={null.mean():.2f} p={p:.4f}  det/station={ndet}")
             axes[col].hist(null, bins=range(0, max(6, obs+2)), alpha=0.5, label=f"{ds} chance")
             axes[col].axvline(obs, ls="--", lw=2, label=f"{ds} obs={obs} (p={p:.3f})")
-        axes[col].set_title(f"Cross-station synchrony — {method.upper()} detector (observed vs time-shift null)")
+        axes[col].set_title(f"{method.upper()} detector")
         axes[col].set_xlabel("number of coincident cross-station events")
         axes[col].set_ylabel("count over time-shift permutations")
         axes[col].legend(fontsize=8); axes[col].grid(alpha=0.3)
@@ -235,6 +235,7 @@ def main():
 
     sfx = "" if CODA_VETO_ON else "_nocoda"
     pd.DataFrame(sync_rows).to_csv(OUT / f"synchrony{sfx}.csv", index=False)
+    fig.suptitle("Cross-station synchrony — observed vs time-shift-null distribution")
     fig.tight_layout(); fig.savefig(OUT / f"synchrony{sfx}.png", dpi=300); plt.close(fig)
     (OUT / f"summary{sfx}.txt").write_text("\n".join(L))
     print("\n".join(L)); print(f"\nOutputs → {OUT}")
