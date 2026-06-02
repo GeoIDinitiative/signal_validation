@@ -1,14 +1,25 @@
-NETWORK MATCHED FILTER — coherent cross-station stack
-======================================================
+NETWORK MATCHED FILTER — coherent cross-station stack (scalar dir vs vector |R|)
+==============================================================================
 
-ingv: 2 stations  net_floor=0.410  single_floor=0.607
+### TRACK = SCALAR  (component 'dir')
+ingv: 2 stations  net_floor=0.427  single_floor=0.592
 
-experiment: 5 stations  net_floor=0.274  single_floor=0.582
+experiment: 5 stations  net_floor=0.296  single_floor=0.569
 
-ingv        NETWORK : SNR50=0.39  SNR90=0.62
-ingv        single  : SNR50=0.63  SNR90=0.85
-experiment  NETWORK : SNR50=0.31  SNR90=0.46
-experiment  single  : SNR50=0.46  SNR90=0.69
+### TRACK = VEC  (component 'vec')
+ingv: 2 stations  net_floor=0.360  single_floor=0.510
+
+experiment: 5 stations  net_floor=0.272  single_floor=0.558
+
+ingv        scalar NETWORK : SNR50=0.41  SNR90=0.65
+ingv        scalar single  : SNR50=0.60  SNR90=0.83
+ingv        vec    NETWORK : SNR50=0.36  SNR90=0.48
+ingv        vec    single  : SNR50=0.51  SNR90=0.70
+experiment  scalar NETWORK : SNR50=0.33  SNR90=0.47
+experiment  scalar single  : SNR50=0.41  SNR90=0.64
+experiment  vec    NETWORK : SNR50=0.25  SNR90=0.44
+experiment  vec    single  : SNR50=0.50  SNR90=0.70
 
 A lower NETWORK SNR90 than single-station = the coherent stack detects smaller
-tilt amplitudes (~sqrt(N) gain). This sets the deepest sensitivity floor of the search.
+tilt amplitudes (~sqrt(N) gain). The vector |R| track uses both axes coherently and
+sets the deepest sensitivity floor of the search.

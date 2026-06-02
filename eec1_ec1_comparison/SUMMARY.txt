@@ -1,4 +1,4 @@
-EEC1 (winter) vs EC1 (summer) — SAME borehole instrument, two campaigns
+EC1 (eruptive) vs EC1 (non-eruptive) — SAME borehole instrument, two campaigns
 ==================================================================
 in-band horizontal background (raw)            winter/summer = 10.6×
 in-band horizontal background (de-thermalised) winter/summer = 8.9×

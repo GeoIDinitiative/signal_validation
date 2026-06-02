@@ -1,0 +1,8 @@
+dataset,station,component,max_detect,max_signif,stack_detect,stack_signif,max_f95,max_f99,stack_f95,stack_f99
+ingv,ECPN,vec,78,44,114,49,0.503,0.521,0.322,0.336
+ingv,EEC1,vec,42,14,215,101,0.445,0.477,0.262,0.275
+experiment,EC1,vec,14,10,9,7,0.442,0.461,0.302,0.311
+experiment,EC10,vec,12,9,2,0,0.438,0.453,0.299,0.31
+experiment,ECIT,vec,11,3,4,0,0.467,0.494,0.32,0.334
+experiment,ECOR,vec,8,5,7,4,0.489,0.504,0.327,0.337
+experiment,EMAS,vec,2,2,2,0,0.49,0.517,0.366,0.384

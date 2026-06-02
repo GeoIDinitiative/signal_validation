@@ -1,0 +1,30 @@
+MULTI-METHOD CORRELATION BATTERY
+========================================
+methods: SWCC, SUBSPACE, ENVELOPE, DTW
+
+ingv: null floors SWCC=0.648  SUBSPACE=0.463  ENVELOPE=0.723  DTW=0.160
+
+experiment: null floors SWCC=0.613  SUBSPACE=0.434  ENVELOPE=0.753  DTW=0.153
+
+ingv        SWCC     : SNR50=0.81  SNR90=1.00
+ingv        SUBSPACE : SNR50=0.90  SNR90=1.67
+ingv        ENVELOPE : SNR50=2.08  SNR90=2.85
+ingv        DTW      : SNR50=1.25  SNR90=1.95
+experiment  SWCC     : SNR50=0.70  SNR90=1.00
+experiment  SUBSPACE : SNR50=0.77  SNR90=1.35
+experiment  ENVELOPE : SNR50=2.05  SNR90=2.95
+experiment  DTW      : SNR50=1.38  SNR90=nan
+
+REAL-DATA DETECTIONS (longest clean block):
+   ingv        SWCC     : 1 detections / ~59 windows
+   ingv        SUBSPACE : 5 detections / ~59 windows
+   ingv        ENVELOPE : 1 detections / ~59 windows
+   ingv        DTW      : 2 detections / ~38 windows
+   experiment  SWCC     : 2 detections / ~59 windows
+   experiment  SUBSPACE : 4 detections / ~59 windows
+   experiment  ENVELOPE : 3 detections / ~59 windows
+   experiment  DTW      : 1 detections / ~38 windows
+
+All methods null on real data + their injection curves => templates do not
+correlate with the denoised data by ANY of the tested families, down to each
+method's SNR90.

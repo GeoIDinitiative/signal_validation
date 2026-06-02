@@ -29,12 +29,14 @@ from pathlib import Path
 from swcc_accumulated import per_sim_scores, combine
 from swcc_comprehensive import load_template, SIMS
 from swcc_gapaware import swcc_gapaware
+from swcc_vector import load_cont_complex          # complex observed for the vector |R| track
+import phd_env                                      # branch-aware OUT / floors / tracks
 
 warnings.filterwarnings("ignore")
 BASE = Path("/home/owen/tilt_validation")
 CONT = BASE / "continuous_bandpassed"
-OUT  = BASE / "SWCC_comprehensive" / "injection"
-FLOORS = pd.read_csv(BASE / "SWCC_comprehensive" / "continuous" / "detect_counts.csv")
+OUT  = phd_env.out(BASE / "SWCC_comprehensive" / "injection")
+FLOORS = pd.read_csv(phd_env.dets_dir() / "detect_counts.csv")
 
 STATIONS = {"ingv": ["ECPN", "EEC1"], "experiment": ["EC1", "EC10", "ECIT", "ECOR", "EMAS"]}
 COMPONENTS = ["dir", "mag"]
@@ -60,17 +62,19 @@ def clean_windows(d, n_need):
     return valid_starts
 
 
-def trial(host, ds, st, inj_sim, inj_tpl, snr, fmax, fstk, rng):
-    T = load_template(ds, st, inj_sim, inj_tpl)
+def trial(host, ds, st, comp, inj_sim, inj_tpl, snr, fmax, fstk, rng):
+    T = load_template(ds, st, inj_sim, inj_tpl, comp)
+    if T is None or len(T) < 100:                    # missing DOF template (e.g. EMAS sim1) — skip
+        return None
     M = len(T)
     p = (len(host) - M) // 2
-    noise_rms = np.sqrt(np.mean(host ** 2))
+    noise_rms = np.sqrt(np.mean(np.abs(host) ** 2))  # band-RMS (real or complex host)
     if noise_rms == 0 or T.std() == 0:
         return False, False
-    shape = (T - T.mean()) / T.std()                 # unit-RMS template shape
+    shape = (T - T.mean()) / T.std()                 # unit-RMS template shape (complex for vec)
     sig = host.copy()
     sig[p:p+M] += snr * noise_rms * shape            # inject at SNR x noise RMS
-    sims = per_sim_scores(sig, ds, st)
+    sims = per_sim_scores(sig, ds, st, comp)
     if not sims:
         return False, False
     Mx, Sx = combine(sims)
@@ -80,66 +84,90 @@ def trial(host, ds, st, inj_sim, inj_tpl, snr, fmax, fstk, rng):
     return bool(rec_max), bool(rec_stk)
 
 
+# detection tracks: established scalar detectors (dir+mag) vs the new vector |R|
+# (a phd_output branch run collapses these to one track named after the branch)
+TRACKS = phd_env.tracks({"scalar": ["dir", "mag"], "vec": ["vec"]})
+
+
+def build_pool(ds, sts, comps):
+    """Pool of (station, comp, signal, clean-window starts, fmax, fstk) for the given components."""
+    pool = []
+    for st in sts:
+        for comp in comps:
+            if comp == "vec":                             # complex observed dir + i·dir2
+                d = load_cont_complex(ds, st)
+                if d is None:
+                    continue
+            else:
+                f = CONT / ds / f"{st}_{comp}_0p001-0p01Hz_cont_bp.feather"
+                if not f.exists():
+                    continue
+                d = pd.read_feather(f)
+            starts = clean_windows(d, N_TRIALS)
+            if len(starts) == 0:
+                continue
+            pool.append((st, comp, d["bandpassed"].to_numpy(), starts, *floors(ds, st, comp)))
+    return pool
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(13)
     rows = []
     for ds, sts in STATIONS.items():
-        # pool trials across this dataset's stations/components
-        pool = []
-        for st in sts:
-            for comp in COMPONENTS:
-                f = CONT / ds / f"{st}_{comp}_0p001-0p01Hz_cont_bp.feather"
-                if not f.exists():
+        for track, comps in TRACKS.items():
+            pool = build_pool(ds, sts, comps)
+            if not pool:
+                continue
+            for snr in SNRS:
+                rmax = rstk = ntot = 0
+                for _ in range(N_TRIALS):
+                    st, comp, sig_all, starts, fmax, fstk = pool[rng.integers(len(pool))]
+                    s0 = starts[rng.integers(len(starts))]
+                    host = sig_all[s0:s0+WIN].copy()
+                    inj_sim = SIMS[rng.integers(len(SIMS))]
+                    inj_tpl = TEMPLATES[rng.integers(len(TEMPLATES))]
+                    res = trial(host, ds, st, comp, inj_sim, inj_tpl, snr, fmax, fstk, rng)
+                    if res is None:                       # missing template — resample, don't count
+                        continue
+                    a, b = res
+                    rmax += a; rstk += b; ntot += 1
+                if ntot == 0:
                     continue
-                d = pd.read_feather(f)
-                starts = clean_windows(d, N_TRIALS)
-                if len(starts) == 0:
-                    continue
-                pool.append((st, comp, d["bandpassed"].to_numpy(), starts, *floors(ds, st, comp)))
-        if not pool:
-            continue
-        for snr in SNRS:
-            rmax = rstk = ntot = 0
-            for _ in range(N_TRIALS):
-                st, comp, sig_all, starts, fmax, fstk = pool[rng.integers(len(pool))]
-                s0 = starts[rng.integers(len(starts))]
-                host = sig_all[s0:s0+WIN].copy()
-                inj_sim = SIMS[rng.integers(len(SIMS))]
-                inj_tpl = TEMPLATES[rng.integers(len(TEMPLATES))]
-                a, b = trial(host, ds, st, inj_sim, inj_tpl, snr, fmax, fstk, rng)
-                rmax += a; rstk += b; ntot += 1
-            rows.append({"dataset": ds, "snr": snr,
-                         "p_detect_max": rmax/ntot, "p_detect_stack": rstk/ntot, "n": ntot})
-            print(f"  {ds} SNR={snr:>4}: P_max={rmax/ntot:.2f}  P_stack={rstk/ntot:.2f}")
+                rows.append({"dataset": ds, "track": track, "snr": snr,
+                             "p_detect_max": rmax/ntot, "p_detect_stack": rstk/ntot, "n": ntot})
+                print(f"  {ds}/{track} SNR={snr:>4}: P_max={rmax/ntot:.2f}  P_stack={rstk/ntot:.2f}")
     df = pd.DataFrame(rows)
     df.to_csv(OUT / "recovery.csv", index=False)
 
-    # curves + thresholds
+    # curves + thresholds  (scalar = solid, vector = dotted)
     fig, ax = plt.subplots(figsize=(9, 6))
-    L = ["INJECTION-RECOVERY — detection sensitivity", "=" * 46, ""]
-    for ds, c in [("ingv", "#1f2937"), ("experiment", "#dc2626")]:
-        g = df[df.dataset == ds].sort_values("snr")
-        if g.empty:
-            continue
-        for col, ls, lab in [("p_detect_max", "-", "MAX"), ("p_detect_stack", "--", "STACK")]:
-            ax.plot(g.snr, g[col], ls, color=c, marker="o",
-                    label=f"{ds} · {lab}")
-            # interpolate 50% and 90% thresholds
-            def thr(p):
-                x, y = g.snr.to_numpy(), g[col].to_numpy()
-                if y.max() < p:
-                    return np.nan
-                return float(np.interp(p, y, x))
-            s50, s90 = thr(0.5), thr(0.9)
-            L.append(f"{ds:11s} {lab:5s}: SNR50={s50:.2f}  SNR90={s90:.2f}")
+    L = ["INJECTION-RECOVERY — detection sensitivity (scalar dir/mag vs vector |R|)", "=" * 60, ""]
+    style = {("ingv", "scalar"): ("#1f2937", "-"), ("ingv", "vec"): ("#1f2937", ":"),
+             ("experiment", "scalar"): ("#dc2626", "-"), ("experiment", "vec"): ("#dc2626", ":")}
+
+    def thr(g, col, p):
+        x, y = g.snr.to_numpy(), g[col].to_numpy()
+        return float(np.interp(p, y, x)) if y.max() >= p else np.nan
+
+    for ds in ["ingv", "experiment"]:
+        for track in TRACKS:
+            g = df[(df.dataset == ds) & (df.track == track)].sort_values("snr")
+            if g.empty:
+                continue
+            c, ls = style.get((ds, track), ("k", "-"))
+            ax.plot(g.snr, g.p_detect_max, ls, color=c, marker="o", label=f"{ds} · {track} · MAX")
+            L.append(f"{ds:11s} {track:6s} MAX: SNR50={thr(g,'p_detect_max',0.5):.2f}  "
+                     f"SNR90={thr(g,'p_detect_max',0.9):.2f}  |  STACK: "
+                     f"SNR50={thr(g,'p_detect_stack',0.5):.2f}  SNR90={thr(g,'p_detect_stack',0.9):.2f}")
     ax.axhline(0.5, color="gray", ls=":", alpha=0.6); ax.axhline(0.9, color="gray", ls=":", alpha=0.6)
     ax.set(xlabel="injection SNR (template band-RMS / noise band-RMS)",
-           ylabel="detection probability", title="SWCC detection sensitivity (injection-recovery)")
+           ylabel="detection probability", title="Detection sensitivity: scalar vs vector matched filter")
     ax.set_ylim(0, 1.02); ax.legend(fontsize=9); ax.grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(OUT / "recovery.png", dpi=300); plt.close(fig)
     L += ["", "Interpretation: the pipeline recovers injected templates above SNR90; it found",
           "no real detections, so any matching transient in the data is below that level.",
+          "The vector |R| track uses both axes — its SNR90 is the deepest single-station floor.",
           "High-SNR recovery -> 1.0 validates the search end-to-end."]
     (OUT / "summary.txt").write_text("\n".join(L))
     print("\n".join(L)); print(f"\nOutputs → {OUT}")

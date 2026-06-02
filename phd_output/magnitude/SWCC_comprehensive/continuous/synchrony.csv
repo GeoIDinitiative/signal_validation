@@ -1,0 +1,5 @@
+track,dataset,method,n_stations,observed,chance,p
+magnitude,ingv,max,2,2,0.41,0.055
+magnitude,experiment,max,3,0,0.009,1.0
+magnitude,ingv,stack,2,0,0.912,1.0
+magnitude,experiment,stack,3,0,0.006,1.0

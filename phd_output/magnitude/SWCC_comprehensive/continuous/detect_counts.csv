@@ -1,0 +1,8 @@
+dataset,station,component,max_detect,max_signif,stack_detect,stack_signif,max_f95,max_f99,stack_f95,stack_f99
+ingv,ECPN,mag,121,70,166,120,0.59,0.612,0.363,0.372
+ingv,EEC1,mag,95,45,101,58,0.504,0.536,0.317,0.33
+experiment,EC1,mag,5,3,4,2,0.583,0.615,0.364,0.384
+experiment,EC10,mag,4,0,1,0,0.56,0.605,0.354,0.371
+experiment,ECIT,mag,4,1,5,1,0.55,0.578,0.358,0.375
+experiment,ECOR,mag,4,1,7,1,0.577,0.616,0.358,0.379
+experiment,EMAS,mag,0,0,0,0,0.653,0.685,0.487,0.51

@@ -1,0 +1,17 @@
+dataset,track,snr,p_detect_max,p_detect_stack,n
+ingv,components,0.25,0.0,0.0375,80
+ingv,components,0.5,0.15,0.1875,80
+ingv,components,0.75,0.5625,0.3625,80
+ingv,components,1.0,0.95,0.5375,80
+ingv,components,1.5,1.0,0.825,80
+ingv,components,2.0,1.0,0.875,80
+ingv,components,3.0,1.0,0.8625,80
+ingv,components,5.0,1.0,0.875,80
+experiment,components,0.25,0.02666666666666667,0.013333333333333334,75
+experiment,components,0.5,0.12,0.05333333333333334,75
+experiment,components,0.75,0.43243243243243246,0.1891891891891892,74
+experiment,components,1.0,0.8933333333333333,0.4,75
+experiment,components,1.5,1.0,0.6363636363636364,77
+experiment,components,2.0,1.0,0.7763157894736842,76
+experiment,components,3.0,1.0,0.8701298701298701,77
+experiment,components,5.0,1.0,0.9473684210526315,76

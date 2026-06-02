@@ -1,0 +1,17 @@
+dataset,track,snr,p_detect_max,p_detect_stack,n
+ingv,magnitude,0.25,0.0375,0.025,80
+ingv,magnitude,0.5,0.25,0.175,80
+ingv,magnitude,0.75,0.725,0.375,80
+ingv,magnitude,1.0,0.975,0.6,80
+ingv,magnitude,1.5,1.0,0.825,80
+ingv,magnitude,2.0,1.0,0.8125,80
+ingv,magnitude,3.0,1.0,0.8375,80
+ingv,magnitude,5.0,1.0,0.8625,80
+experiment,magnitude,0.25,0.0,0.0,75
+experiment,magnitude,0.5,0.06666666666666667,0.02666666666666667,75
+experiment,magnitude,0.75,0.5675675675675675,0.21621621621621623,74
+experiment,magnitude,1.0,0.88,0.44,75
+experiment,magnitude,1.5,1.0,0.7532467532467533,77
+experiment,magnitude,2.0,1.0,0.7763157894736842,76
+experiment,magnitude,3.0,1.0,0.8441558441558441,77
+experiment,magnitude,5.0,1.0,0.9210526315789473,76

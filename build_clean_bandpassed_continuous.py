@@ -164,6 +164,9 @@ def apply_admittance(na_block, adm):
 def component(df, dcol, which):
     if which == "dir":
         return df[dcol].to_numpy(float), dcol
+    if which == "dir2":                                   # 2nd recorded axis, for the VECTOR filter
+        c = "north" if "north" in df.columns else "y"     # INGV: east/north ; experiment: x/y
+        return df[c].to_numpy(float), c
     if "mag" in df.columns:
         return df["mag"].to_numpy(float), "mag"
     return np.sqrt(df["x"].to_numpy(float)**2 + df["y"].to_numpy(float)**2), "sqrt(x^2+y^2)"
@@ -294,9 +297,9 @@ def main():
     for station, (ds, *_ ) in SRC.items():
         outdir = OUT / ds; outdir.mkdir(parents=True, exist_ok=True)
         line = [f"{station} ({ds})"]
-        for which in ("dir", "mag"):
+        for which in ("dir", "mag", "dir2"):
             res, st = process(station, which, eq)
-            tag = "dir" if which == "dir" else "mag"
+            tag = which                                   # dir | mag | dir2
             base = outdir / f"{station}_{tag}_0p001-0p01Hz_cont_bp"
             res.to_feather(base.with_suffix(".feather"))
             base.with_suffix(".meta.json").write_text(json.dumps({

@@ -1,0 +1,54 @@
+The core definitions (used everywhere)
+Input — raw 1 Hz tilt with P-waves already excised, for 7 stations across two campaigns: ingv (winter, ECPN + EEC1, Nov 2022–Feb 2023, spans the eruptive period) and experiment (summer, EC1/EC10/ECIT/ECOR/EMAS, Jul–Aug 2023). Two components each: dir (directional) and mag (magnitude).
+
+Band — 0.001–0.01 Hz (periods 100–1000 s, the ULP band where the magma-mixing templates live), order-4 Butterworth, zero-phase (sosfiltfilt), applied per continuous segment (never across a gap), with even-reflection padding.
+
+Template bank — 4 simulations × 4 templates = 16 per station, derived from the numerical sim tilt, bandpassed identically (verified: 97% of template power in-band). Templates 1–3 are contiguous thirds of the sim; template4 is the whole ~2.8 h sim.
+
+SWCC — gap-aware, NaN-aware normalized Pearson |r| of a template against every window of the signal (min_valid_frac=0.8). Polarity-blind (|r|). Accumulated across the bank two ways: MAX (best of 16) and STACK (mean — coherent √N gain).
+
+Data-driven floors (the thresholds — no fixed 0.2/0.5) — for each unit, the 95th percentile = detection floor and 99th percentile = significance floor of the max-|r| over phase-randomized surrogates (N_SURR=300). Three granularities, same procedure:
+
+per (station, sim, template) → template_floors.csv (stage 2)
+per (station, accumulated MAX/STACK) → inside the detector (stage 3)
+per method → the battery
+Significance hierarchy (important) — a single peak above its 99th-pct floor is screening-only ("above-floor"), not a detection — by construction ~1% of windows cross it. The trustworthy significances are the time-slide FAR, the circular-shift synchrony, and the multi-method battery.
+
+Phase A — Preprocess & detect (stages 1–4)
+1 · continuous (build_clean_bandpassed_continuous.py) — Design-B "condition the whole record, then veto." Builds a 1 Hz grid; thermally de-noises via coherence-gated complex admittance H(f)=S_tilt,na/S_na,na (subtract only where na↔tilt coherence ≥ COH_THR=0.3, in-band); bandpasses per segment; and marks a veto mask from three sources: (a) detectability-gated earthquakes Mmin(d)=5.5+1.1·log₁₀(d/1000), margin 0.5; (b) a data-driven in-band STA/LTA trigger (STA=600 s, LTA=6000 s, ratio>4) catching contamination the catalogue misses; (c) block-edge settling. → continuous_bandpassed/ (~100% coverage vs 28% cut-first).
+
+2 · floors (compute_floors.py) — the per-(station,comp,sim,template) 95th/99th floors from 300 phase-randomized surrogates of a clean host (HOST_MAX=30000). → template_floors.csv.
+
+3 · detect (swcc_continuous.py) — the core. Computes the accumulated MAX/STACK score over the full record, then find_peaks(height = per-station null floor, distance=PEAK_SEP=3333) (= one template length, non-overlapping). A peak is dropped if its window [i−VETO_PRE(1800 s), i+M] overlaps the veto (symmetric) or is within ±CODA_H=2 h of an M≥5.5 quake. significant = score > 99th floor. Then cross-station synchrony: collapse to per-station times (de-dup dir/mag within TOL_S=600 s), count coincidences (≥2 stations within 600 s), and test against a circular-shift null (N_PERM=2000). → all_detections_continuous.csv, synchrony.png/csv. Result: synchrony non-significant (ingv max p=0.21, rest ≥0.8).
+
+4 · plots (swcc_plots_continuous.py) — the 224 per-(station,sim,template) SWCC traces with the data-driven floor lines, clean=blue / contaminated=grey.
+
+Phase B — Sensitivity & validation (stages 5–10)
+5 · injection (injection_recovery.py) — injects templates scaled to SNR × local noise (SNRS=[0.25…5]), recovers within TOL=400 samples, builds the efficiency curve → SNR50/SNR90 (≈1.0–1.14). This is what makes the null quantitative (→ the upper limits).
+
+6 · network (network_matched_filter.py) — cross-station coherent stack sensitivity (√N).
+
+7 · analysis (swcc_analysis_plots.py) — detection overview (score vs time + floors + volcanic overlay), by-station bar chart, and the ULP-aware candidate selection: gates each detection on {not vetoed, above-band leakage<1, kurtosis<4, impulse-concentration<0.45}, ranks survivors, and renders the 4×2 real-vs-template mega-panels (raw/denoised/spectrogram/Morlet × candidate/template).
+
+8 · credibility (credibility_checks_continuous.py) — filter magnitude/step response, de-ringing before/after, null test.
+
+9 · contamination (contamination_audit.py) — validates the veto (in-band STA/LTA vs the veto mask; escapes → 0).
+
+10 · report (pipeline_report.py) — consolidated REPORT.png/.md.
+
+Phase C — GW-grade significance (stages 11–14)
+11 · fitfactor — template-bank coverage (fitting factor: how well the bank spans generic transients — it's narrow). 12 · whiten — whitened matched filter vs Pearson r. 13 · chisq — Allen χ² signal-consistency (are chance detections glitch-like? yes). 14 · far (far_significance.py) — false-alarm rate via time-slides (N_SLIDES=500, TOL_S=600, loudness = Σ station scores): the loudest real coincidence is consistent with background. This is the headline significance — null.
+
+Phase D — Templates & two-period comparison (stages 15–18)
+15 · templateperf (top_template_plots.py) — per-(station,sim,template) peak counts above each combination's own floor (n_detect/n_signif), top-40 SST + by-sim/template performance + heatmap. 16 · eec1ec1 — the same-instrument EEC1(winter)-vs-EC1(summer) suite (7 figs: records, in-band background, PSD, rolling RMS, distributions, thermal+LSB-units, detection/upper-limit). 17 · eec1stats — the thesis-grade statistical comparison (KS/Levene/Jarque-Bera, block-bootstrap CIs, band powers, thermal r, diurnal, peak-rate): winter 7.7× RMS, kurtosis 754, 12× more non-stationary, but peak-|r| distributions indistinguishable (p=0.11). 18 · eruptivemap — clean-peak temporal density heatmaps vs eruptive overlays + clustering permutation test (72% in-eruption vs 78% by time → p=0.231, no clustering).
+
+Phase E — Comprehensive analysis suite (stages 19–23)
+19 · rankings — SWCC peak-count bar charts by station/template/sim/dataset. 20 · candchar — detection characterisation (score/station/dataset distributions, credibility margin above floor, top-20 table). 21 · wavelet — Morlet CWT suite (template + station scalograms, power spectra, ~2-day temporal). 22 · syncevents — gallery of the actual cross-station coincidences (same TOL_S=600; found exactly the 3 the synchrony test reported). 23 · cumulative — cumulative detection-rate curves per station/dataset with eruptive overlays (steady, non-bursty accrual).
+
+Standalone (not auto-run)
+correlation_battery.py — SWCC vs subspace(SVD) vs envelope(Hilbert) vs DTW, each vs its own 99th-pct floor + injection. All four null — the strongest cross-method confirmation.
+template_exceedance/ — ⚠ retracted (the per-template count-enrichment null is degenerate + non-stationary-biased; kept only as a documented lesson).
+tilt_experiments/ (sibling folder) — the 10 exploratory probes (timewarp, interpolate, spatial, synchrony-window sweep, network-timing, upper-limit, EEC1/EC1 prototypes, floor recalibration, ULP ranking).
+The throughline: raw → thermal-denoise + per-segment bandpass + data-driven veto (1) → data-driven floors (2) → accumulated |r| detection + synchrony (3) → sensitivity/upper-limits (5) + FAR (14) as the real significance → everything downstream (templates, EEC1/EC1, eruptive timing, rankings, wavelets) reads those same floor-based detections. Every robust test returns null, and it's quantified as a 90%-confidence amplitude upper limit.
+
+Want me to drop this into a PIPELINE_GUIDE.md in the repo, and/or commit the whole expanded suite to signal_validation?

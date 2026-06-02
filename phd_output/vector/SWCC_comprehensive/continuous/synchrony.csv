@@ -1,0 +1,5 @@
+track,dataset,method,n_stations,observed,chance,p
+vector,ingv,max,2,0,0.093,1.0
+vector,experiment,max,5,0,0.424,1.0
+vector,ingv,stack,2,0,0.68,1.0
+vector,experiment,stack,2,0,0.036,1.0

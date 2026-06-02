@@ -1,0 +1,10 @@
+CLEAN-PEAK ↔ ERUPTION TEMPORAL ASSOCIATION (INGV winter)
+====================================================
+significant peaks (INGV): 347
+fraction of the window that is eruptive-active: 0.78
+fraction of significant peaks falling in eruptive-active intervals: 0.73
+  (if peaks were unrelated to eruptions, expect ≈ 0.78)
+permutation test (circular time-shift, 2000×): p = 0.201
+
+→ NO significant clustering: correlated events are distributed in time independently of the
+  eruptive phases (consistent with the overall null — the matches are not eruption-driven).

@@ -1,0 +1,15 @@
+dataset,station,component,max_detect,max_signif,stack_detect,stack_signif,max_f95,max_f99,stack_f95,stack_f99
+ingv,ECPN,dir,4,1,25,10,0.66,0.684,0.385,0.397
+ingv,ECPN,dir2,115,65,168,110,0.592,0.614,0.363,0.373
+ingv,EEC1,dir,39,13,74,30,0.521,0.553,0.324,0.341
+ingv,EEC1,dir2,20,5,186,118,0.557,0.597,0.306,0.317
+experiment,EC1,dir,4,1,10,5,0.531,0.549,0.333,0.348
+experiment,EC1,dir2,5,3,3,1,0.613,0.662,0.386,0.399
+experiment,EC10,dir,1,0,2,0,0.562,0.596,0.341,0.356
+experiment,EC10,dir2,7,3,4,1,0.544,0.593,0.364,0.378
+experiment,ECIT,dir,0,0,0,0,0.666,0.708,0.418,0.433
+experiment,ECIT,dir2,3,1,4,0,0.566,0.597,0.356,0.372
+experiment,ECOR,dir,8,4,2,0,0.588,0.62,0.359,0.38
+experiment,ECOR,dir2,3,2,5,2,0.622,0.651,0.387,0.404
+experiment,EMAS,dir,1,1,0,0,0.634,0.661,0.453,0.475
+experiment,EMAS,dir2,1,0,1,0,0.582,0.62,0.424,0.45

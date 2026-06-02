@@ -1,0 +1,26 @@
+DESIGN B — full-continuous-signal detection (gap-aware accumulated SWCC + veto)
+======================================================================
+
+(1) SIGNAL USAGE (continuous):
+   ingv        ECPN : 7,737,289 analysed (89% of span, 2.1% vetoed)
+   ingv        EEC1 : 6,911,506 analysed (89% of span, 2.9% vetoed)
+   experiment  EC1  :   845,998 analysed (98% of span, 2.8% vetoed)
+   experiment  EC10 :   732,804 analysed (85% of span, 1.5% vetoed)
+   experiment  ECIT :   845,998 analysed (98% of span, 1.7% vetoed)
+   experiment  ECOR :   845,998 analysed (98% of span, 1.9% vetoed)
+   experiment  EMAS :   845,998 analysed (98% of span, 4.2% vetoed)
+
+(1b) DETECTIONS  (find_peaks wired to null floors: detect=95th, signif=99th)
+     NB: 'signif' = above per-window 99th-pct floor = SCREENING ONLY, not a detection
+     claim (single-station amplitude floor is a weak discriminator — audit finding C).
+     Real significance = synchrony (sec.2) + time-slide FAR + ULP-morphology gate.
+   ingv       : MAX  detect=178 above-floor=84 | STACK detect=453 above-floor=268
+   experiment : MAX  detect=33 above-floor=15 | STACK detect=31 above-floor=9
+
+(2) SYNCHRONY — TRACK COMPONENTS · METHOD MAX
+   ingv       : observed=0 chance=0.15 p=1.0000  det/station={'ECPN': 66, 'EEC1': 18}
+   experiment : observed=0 chance=0.10 p=1.0000  det/station={'EC1': 4, 'EC10': 3, 'ECIT': 1, 'ECOR': 6, 'EMAS': 1}
+
+(2) SYNCHRONY — TRACK COMPONENTS · METHOD STACK
+   ingv       : observed=5 chance=2.43 p=0.0870  det/station={'ECPN': 119, 'EEC1': 147}
+   experiment : observed=0 chance=0.03 p=1.0000  det/station={'EC1': 6, 'EC10': 1, 'ECOR': 2}

@@ -1,0 +1,18 @@
+CROSS-FACET CO-DETECTION — X & Y & magnitude all above floor AND direction agreement
+================================================================================
+
+An event passes iff rX>floorX AND rY>floorY AND rMag>floorMag AND |Δazimuth| ≤ Δ.
+Direction (Δazimuth) is exact for EC1/EC10/EMAS + INGV; ECIT/ECOR (no orientation) can
+satisfy the amplitude AND-gate but have no azimuth and never count toward the angle test.
+
+candidate events evaluated: 288   (amplitude AND-gate X&Y&mag passed: 1)
+
+  Δ (deg) | co-detections (observed) | per-window null rate
+     10   |           0            |   0.0000
+     20   |           0            |   0.0018
+     30   |           0            |   0.0018
+     45   |           0            |   0.0018
+
+Expectation under the established null: ~0 surviving co-detections (a chance amplitude
+match in all three facets that ALSO points the right way is very unlikely).
+Orientation-covered stations: EC1, EC10, EMAS + INGV ECPN/EEC1.

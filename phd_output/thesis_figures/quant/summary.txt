@@ -1,0 +1,34 @@
+QUANTITATIVE PERFORMANCE — floor-based detections, per component
+================================================================
+
+Components: X=tilt-x, Y=tilt-y, magnitude=√(x²+y²), vector=|R| (2-component).
+n_detect = peaks above the data-driven 95th-pct detection floor; n_signif = above 99th-pct.
+
+### BY TEMPLATE — total n_detect (both datasets), per component
+           X (tilt-x)  Y (tilt-y)  magnitude  vector |R|
+template                                                
+template1         483         485        541        1043
+template2         505         434        572         944
+template3         629         442        493        1150
+template4         672         798        967        1682
+
+### BY CONFIGURATION — total n_detect (both datasets), per component
+               X (tilt-x)  Y (tilt-y)  magnitude  vector |R|
+configuration                                               
+sim1                  352         266        307         628
+sim2                  526         377        440         910
+sim3                  605         714        893        1690
+sim4                  806         802        933        1591
+
+### BY STATION — total n_detect (both datasets), per component
+         X (tilt-x)  Y (tilt-y)  magnitude  vector |R|
+station                                               
+EC1              80          59         44         164
+EC10             34         268         87         164
+ECIT            108          48        127         138
+ECOR             65         376         57         385
+ECPN            505         222        255        1256
+EEC1           1411        1151       1922        2613
+EMAS             86          35         81          99
+
+GRAND TOTAL above-floor detections: 11840 (significance-floor: 5874)

@@ -1,0 +1,12 @@
+SYNCHRONOUS-EVENT GALLERY (aligned to the main floor-based synchrony test)
+============================================================
+coincidence window TOL_S = 600s (identical to swcc_continuous)
+total cross-station coincidences of significant detections: 5
+
+   ingv        max  : 0 coincidence(s)   synchrony p = 1.000
+   ingv        stack: 5 coincidence(s)   synchrony p = 0.087
+   experiment  max  : 0 coincidence(s)   synchrony p = 1.000
+   experiment  stack: 0 coincidence(s)   synchrony p = 1.000
+
+Each coincidence is plotted; with the synchrony p-values non-significant, these are chance
+alignments of unrelated single-station peaks, not coherent network events (consistent with null).

@@ -28,6 +28,9 @@ from pathlib import Path
 from scipy.signal import correlate, hilbert, decimate, find_peaks
 
 from swcc_comprehensive import load_template, SIMS
+# NOTE: the 2-component vector |R| family is covered by vector_orientation.py + the injection/
+# network 'vec' tracks (the battery's shared single-window loop can't align the complex dir+dir2
+# signal where dir/dir2 keep slightly different rows, e.g. ECPN), so VECTOR is not added here.
 try:
     from dtaidistance import dtw as _dtw
     HAVE_DTW = True
@@ -242,7 +245,7 @@ def main():
         ax.axhline(0.9, color="gray", ls=":", alpha=0.5); ax.axhline(0.5, color="gray", ls=":", alpha=0.5)
         ax.set(title=f"{ds}: detection probability vs SNR", xlabel="injection SNR", ylabel="P(detect)")
         ax.set_ylim(0, 1.02); ax.legend(fontsize=9); ax.grid(alpha=0.3)
-    fig.tight_layout(); fig.savefig(OUT / "recovery.png", dpi=140); plt.close(fig)
+    fig.tight_layout(); fig.savefig(OUT / "recovery.png", dpi=300); plt.close(fig)
 
     Lsum += ["", "REAL-DATA DETECTIONS (longest clean block):"]
     for _, r in cnt.iterrows():

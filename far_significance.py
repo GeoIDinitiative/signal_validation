@@ -21,10 +21,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+import phd_env                                          # branch-aware OUT / detections / tracks
 warnings.filterwarnings("ignore")
 BASE = Path("/home/owen/tilt_validation")
-DETS = BASE / "SWCC_comprehensive" / "continuous" / "all_detections_continuous.csv"
-OUT  = BASE / "gw_methods"
+DETS = phd_env.dets_dir() / "all_detections_continuous.csv"
+OUT  = phd_env.out(BASE / "gw_methods")
 TOL_S, N_SLIDES, METHOD = 600, 500, "max"
 
 
@@ -48,51 +49,61 @@ def coincidences(stations):
     return out
 
 
+# scalar (dir+mag) reproduces the established FAR exactly; vec is the new 2-component track.
+# A phd_output branch run collapses these to one track named after the branch.
+TRACKS = phd_env.tracks({"scalar": ["dir", "mag"], "vec": ["vec"]})
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     dets = pd.read_csv(DETS, parse_dates=["peak_time"])
     dets = dets[dets.method == METHOD]
+    if "component" not in dets.columns:
+        dets["component"] = "dir"
     rows = []
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5.5))
-    for ax, ds in zip(axes, ["ingv", "experiment"]):
-        g = dets[dets.dataset == ds]
-        if g.empty:
-            continue
-        t0 = g.peak_time.min(); t1 = g.peak_time.max()
-        span = (t1 - t0).total_seconds()
-        livetime_yr = span / (365.25*86400)
-        stations = {}
-        for st, sdf in g.groupby("station"):
-            sec = (sdf.peak_time - t0).dt.total_seconds().to_numpy()
-            stations[st] = pd.DataFrame({"sec": sec, "score": sdf.score.to_numpy()})
-        if len(stations) < 2:
-            continue
-        real = coincidences(stations)
-        real_loud = max((c[1] for c in real), default=0.0)
+    fig, axes = plt.subplots(len(TRACKS), 2, figsize=(13, 5.5*len(TRACKS)), squeeze=False)
+    for r, (track, comps) in enumerate(TRACKS.items()):
+        dt = dets[dets.component.isin(comps)]
+        for c, ds in enumerate(["ingv", "experiment"]):
+            ax = axes[r][c]
+            g = dt[dt.dataset == ds]
+            if g.empty:
+                continue
+            t0 = g.peak_time.min(); t1 = g.peak_time.max()
+            span = (t1 - t0).total_seconds()
+            livetime_yr = span / (365.25*86400)
+            stations = {}
+            for st, sdf in g.groupby("station"):
+                sec = (sdf.peak_time - t0).dt.total_seconds().to_numpy()
+                stations[st] = pd.DataFrame({"sec": sec, "score": sdf.score.to_numpy()})
+            if len(stations) < 2:
+                continue
+            real = coincidences(stations)
+            real_loud = max((c2[1] for c2 in real), default=0.0)
 
-        # time-slide background
-        rng = np.random.default_rng(9)
-        bg = []
-        for _ in range(N_SLIDES):
-            slid = {st: df.assign(sec=(df.sec + rng.uniform(0, span)) % span).sort_values("sec")
-                    for st, df in stations.items()}
-            bg += [c[1] for c in coincidences(slid)]
-        bg = np.array(bg)
-        bg_livetime_yr = N_SLIDES * livetime_yr
+            # time-slide background
+            rng = np.random.default_rng(9)
+            bg = []
+            for _ in range(N_SLIDES):
+                slid = {st: df.assign(sec=(df.sec + rng.uniform(0, span)) % span).sort_values("sec")
+                        for st, df in stations.items()}
+                bg += [c2[1] for c2 in coincidences(slid)]
+            bg = np.array(bg)
+            bg_livetime_yr = N_SLIDES * livetime_yr
 
-        # FAR curve: events/yr with loudness >= x
-        xs = np.linspace(0, max(real_loud, bg.max() if len(bg) else 1)*1.05, 200)
-        far = np.array([(bg >= x).sum() for x in xs]) / max(bg_livetime_yr, 1e-9)
-        ax.semilogy(xs, np.maximum(far, 1e-3), color="#2563eb", label="background FAR")
-        if real_loud > 0:
-            far_loud = (bg >= real_loud).sum() / max(bg_livetime_yr, 1e-9)
-            ax.axvline(real_loud, ls="--", c="#dc2626",
-                       label=f"loudest real (FAR={far_loud:.1f}/yr)")
-            rows.append({"dataset": ds, "n_stations": len(stations), "n_real_coinc": len(real),
-                         "loudest": round(real_loud, 3), "far_per_yr": round(far_loud, 2),
-                         "livetime_yr": round(livetime_yr, 3)})
-        ax.set(title=f"{ds}: FAR vs loudness ({METHOD})", xlabel="coincidence loudness (Σ score)",
-               ylabel="false-alarm rate (per year)"); ax.legend(fontsize=8); ax.grid(alpha=0.3)
+            xs = np.linspace(0, max(real_loud, bg.max() if len(bg) else 1)*1.05, 200)
+            far = np.array([(bg >= x).sum() for x in xs]) / max(bg_livetime_yr, 1e-9)
+            ax.semilogy(xs, np.maximum(far, 1e-3), color="#2563eb", label="background FAR")
+            if real_loud > 0:
+                far_loud = (bg >= real_loud).sum() / max(bg_livetime_yr, 1e-9)
+                ax.axvline(real_loud, ls="--", c="#dc2626",
+                           label=f"loudest real (FAR={far_loud:.1f}/yr)")
+                rows.append({"track": track, "dataset": ds, "n_stations": len(stations),
+                             "n_real_coinc": len(real), "loudest": round(real_loud, 3),
+                             "far_per_yr": round(far_loud, 2), "livetime_yr": round(livetime_yr, 3)})
+            ax.set(title=f"{track} · {ds}: FAR vs loudness ({METHOD})",
+                   xlabel="coincidence loudness (Σ score)",
+                   ylabel="false-alarm rate (per year)"); ax.legend(fontsize=8); ax.grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(OUT / "far.png", dpi=300); plt.close(fig)
     df = pd.DataFrame(rows); df.to_csv(OUT / "far.csv", index=False)
     print("FALSE-ALARM RATE (time-slide background):")

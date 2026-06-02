@@ -14,13 +14,21 @@ DESIGN B — full-continuous-signal detection (gap-aware accumulated SWCC + veto
      NB: 'signif' = above per-window 99th-pct floor = SCREENING ONLY, not a detection
      claim (single-station amplitude floor is a weak discriminator — audit finding C).
      Real significance = synchrony (sec.2) + time-slide FAR + ULP-morphology gate.
-   ingv       : MAX  detect=272 above-floor=162 | STACK detect=351 above-floor=225
-   experiment : MAX  detect=32 above-floor=12 | STACK detect=38 above-floor=17
+   ingv       : MAX  detect=379 above-floor=187 | STACK detect=695 above-floor=368
+   experiment : MAX  detect=78 above-floor=40 | STACK detect=55 above-floor=20
 
-(2) SYNCHRONY — METHOD MAX
-   ingv       : observed=2 chance=0.86 p=0.2130  det/station={'ECPN': 73, 'EEC1': 89}
-   experiment : observed=0 chance=0.06 p=1.0000  det/station={'EC1': 6, 'ECIT': 3, 'ECOR': 3}
+(2) SYNCHRONY — TRACK SCALAR · METHOD MAX
+   ingv       : observed=2 chance=0.54 p=0.0970  det/station={'ECPN': 71, 'EEC1': 58}
+   experiment : observed=0 chance=0.06 p=1.0000  det/station={'EC1': 4, 'ECIT': 1, 'ECOR': 5, 'EMAS': 1}
 
-(2) SYNCHRONY — METHOD STACK
-   ingv       : observed=1 chance=1.62 p=0.7995  det/station={'ECPN': 124, 'EEC1': 97}
-   experiment : observed=0 chance=0.12 p=1.0000  det/station={'EC1': 5, 'ECIT': 2, 'ECOR': 5, 'EMAS': 4}
+(2) SYNCHRONY — TRACK SCALAR · METHOD STACK
+   ingv       : observed=2 chance=1.48 p=0.4335  det/station={'ECPN': 129, 'EEC1': 85}
+   experiment : observed=0 chance=0.02 p=1.0000  det/station={'EC1': 7, 'ECIT': 1, 'ECOR': 1}
+
+(2) SYNCHRONY — TRACK VEC · METHOD MAX
+   ingv       : observed=0 chance=0.08 p=1.0000  det/station={'ECPN': 44, 'EEC1': 14}
+   experiment : observed=0 chance=0.41 p=1.0000  det/station={'EC1': 10, 'EC10': 9, 'ECIT': 3, 'ECOR': 5, 'EMAS': 2}
+
+(2) SYNCHRONY — TRACK VEC · METHOD STACK
+   ingv       : observed=0 chance=0.66 p=1.0000  det/station={'ECPN': 49, 'EEC1': 101}
+   experiment : observed=0 chance=0.04 p=1.0000  det/station={'EC1': 7, 'ECOR': 4}

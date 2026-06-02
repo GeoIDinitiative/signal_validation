@@ -14,3 +14,6 @@ continuous_bandpassed/
 # Regenerable figure outputs — rebuild via run_pipeline.py.
 # (Result tables (.csv), reports (.md/.txt), and metadata (.json) are kept.)
 *.png
+
+# Raw simulation DOFs (large source data; templates are rebuilt into tilt_templates_dofs/)
+solid_dofs/

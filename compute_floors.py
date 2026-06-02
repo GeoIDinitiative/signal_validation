@@ -19,13 +19,15 @@ from pathlib import Path
 from swcc_gapaware import swcc_gapaware
 from swcc_comprehensive import load_template, SIMS
 from credibility_checks import phase_randomize
+from swcc_vector import swcc_score, surrogate, load_cont_complex   # vector |R| + complex host/null
+import phd_env                                                     # branch-aware OUT / components
 
 warnings.filterwarnings("ignore")
 BASE = Path("/home/owen/tilt_validation")
 CONT = BASE / "continuous_bandpassed"
-OUT  = BASE / "SWCC_comprehensive" / "continuous"
+OUT  = phd_env.out(BASE / "SWCC_comprehensive" / "continuous")
 STATIONS = {"ingv": ["ECPN", "EEC1"], "experiment": ["EC1", "EC10", "ECIT", "ECOR", "EMAS"]}
-COMPONENTS = ["dir", "mag"]
+COMPONENTS = phd_env.components(["dir", "mag", "vec"])
 TEMPLATES = ["template1", "template2", "template3", "template4"]
 N_SURR, HOST_MAX = 300, 30000
 
@@ -51,23 +53,27 @@ def main():
     for ds, sts in STATIONS.items():
         for st in sts:
             for comp in COMPONENTS:
-                f = CONT / ds / f"{st}_{comp}_0p001-0p01Hz_cont_bp.feather"
-                if not f.exists():
-                    continue
-                d = pd.read_feather(f)
+                if comp == "vec":                         # complex host: dir (c1) + i·dir2 (c2)
+                    d = load_cont_complex(ds, st)
+                    if d is None:
+                        continue
+                else:
+                    f = CONT / ds / f"{st}_{comp}_0p001-0p01Hz_cont_bp.feather"
+                    if not f.exists():
+                        continue
+                    d = pd.read_feather(f)
                 host = clean_host(d)
                 if len(host) < 8000:
                     continue
                 rng = np.random.default_rng(7)
                 for sim in SIMS:
                     for tname in TEMPLATES:
-                        tpl = load_template(ds, st, sim, tname)
+                        tpl = load_template(ds, st, sim, tname, comp)
                         if tpl is None or len(tpl) > len(host):
                             continue
                         maxima = []
                         for _ in range(N_SURR):
-                            r = np.abs(swcc_gapaware(tpl, phase_randomize(host, rng),
-                                                     min_valid_frac=0.8))
+                            r = swcc_score(tpl, surrogate(host, rng), min_valid_frac=0.8)
                             if r.size and np.isfinite(r).any():
                                 maxima.append(np.nanmax(r))
                         if not maxima:

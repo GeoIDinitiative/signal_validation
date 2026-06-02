@@ -24,15 +24,16 @@ from scipy.signal import find_peaks
 from swcc_gapaware import swcc_gapaware
 from swcc_comprehensive import load_template, SIMS, THRESHOLD
 from swcc_oldstyle_plots import load_volcanic_events, plot_volcanic_events_on_swcc
+import phd_env                                          # branch-aware OUT / floors / components
 
 BASE = Path("/home/owen/tilt_validation")
 CONT = BASE / "continuous_bandpassed"
-SWCC = BASE / "SWCC_comprehensive"
+SWCC = phd_env.out(BASE / "SWCC_comprehensive")
 VOLC = load_volcanic_events(BASE / "etna_volcanic_events_cleaned.csv")
-FLOORS = pd.read_csv(SWCC / "continuous" / "template_floors.csv")
+FLOORS = pd.read_csv(phd_env.dets_dir() / "template_floors.csv")
 
 STATIONS = {"ingv": ["ECPN", "EEC1"], "experiment": ["EC1", "EC10", "ECIT", "ECOR", "EMAS"]}
-COMPONENTS = ["dir", "mag"]
+COMPONENTS = phd_env.components(["dir", "mag"])
 TEMPLATES = ["template1", "template2", "template3", "template4"]
 MIN_VALID, PLOT_STEP = 0.8, 30          # min window validity; decimate line to ~30 s for display
 
@@ -66,7 +67,7 @@ def window_contaminated(veto, M):
 
 
 def plot_one(ds, st, comp, sim, tname, grid, x, veto):
-    tpl = load_template(ds, st, sim, tname)
+    tpl = load_template(ds, st, sim, tname, comp)
     if tpl is None:
         return False
     M = len(tpl)

@@ -1,5 +1,9 @@
-dataset,method,n_stations,observed,chance,p
-ingv,max,2,2,0.862,0.213
-experiment,max,3,0,0.064,1.0
-ingv,stack,2,1,1.619,0.7995
-experiment,stack,4,0,0.123,1.0
+track,dataset,method,n_stations,observed,chance,p
+scalar,ingv,max,2,2,0.537,0.097
+scalar,experiment,max,4,0,0.062,1.0
+scalar,ingv,stack,2,2,1.48,0.4335
+scalar,experiment,stack,3,0,0.019,1.0
+vec,ingv,max,2,0,0.084,1.0
+vec,experiment,max,5,0,0.414,1.0
+vec,ingv,stack,2,0,0.657,1.0
+vec,experiment,stack,2,0,0.042,1.0

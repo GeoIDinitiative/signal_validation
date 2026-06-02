@@ -1,0 +1,6 @@
+dataset,method,time,stations,n_stations
+ingv,stack,2022-11-26 19:45:28,ECPN+EEC1,2
+ingv,stack,2022-12-25 23:04:25,ECPN+EEC1,2
+ingv,stack,2022-12-31 09:02:21,ECPN+EEC1,2
+ingv,stack,2023-01-02 14:15:37,ECPN+EEC1,2
+ingv,stack,2023-01-16 19:09:27,ECPN+EEC1,2

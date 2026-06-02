@@ -1,0 +1,4 @@
+branch,synchrony_minp_ingv,synchrony_minp_experiment,FAR_per_yr_ingv,inj_SNR90_experiment,net_SNR90_experiment,signif_total
+components,0.087,1.0,3.05,1.0312500000000002,0.47,376
+magnitude,0.055,1.0,0.7,1.0833333333333335,0.47159090909090917,302
+vector,1.0,1.0,1.1,0.7061563755937158,0.4423076923076923,248

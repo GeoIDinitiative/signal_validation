@@ -54,7 +54,8 @@ STAGES = [
     ("detect",     "swcc_continuous.py",                   "gap-aware accumulated detection + synchrony"),
     ("plots",      "swcc_plots_continuous.py",             "SWCC plots: clean=blue/contaminated=grey, null thresholds"),
     ("injection",  "injection_recovery.py",                "detection sensitivity (SNR50/SNR90)"),
-    ("network",    "network_matched_filter.py",            "cross-station coherent stack sensitivity"),
+    ("network",    "network_matched_filter.py",            "cross-station coherent stack sensitivity (scalar dir + vector |R|)"),
+    ("vectororient","vector_orientation.py",                "two-component vector filter: xlsx-orientation validation + real-data |R|/Re(R) null"),
     ("analysis",   "swcc_analysis_plots.py",               "clean-peak analysis: overview, candidates, by-station"),
     ("credibility","credibility_checks_continuous.py",      "validation figures: filter response, de-ringing, null test"),
     ("contamination","contamination_audit.py",              "data-driven veto validation (in-band STA/LTA vs veto)"),
@@ -65,6 +66,16 @@ STAGES = [
     ("far",        "far_significance.py",                  "GW: false-alarm-rate via time-slide background"),
     ("templateperf","top_template_plots.py",               "per-(station,sim,template) top-40 SST + by-sim/by-template performance plots"),
     ("eec1ec1",    "eec1_ec1_comparison/make_comparison.py", "EEC1(winter) vs EC1(summer) same-instrument comparison suite (7 figs)"),
+    ("eec1stats",  "eec1_ec1_comparison/statistical_tests.py", "EEC1 vs EC1 comprehensive statistical tests (distribution/spectral/thermal/detection)"),
+    ("eruptivemap","eruptive_temporal/peak_density_map.py",    "clean-peak temporal density vs eruptive overlays + clustering permutation test"),
+    ("rankings",   "swcc_rankings.py",                      "SWCC peak-count/ranking bar charts by station/template/sim/dataset (floor-based)"),
+    ("candchar",   "candidate_characterization.py",         "detection characterisation: score/station/dataset distributions, margins, top-20"),
+    ("wavelet",    "wavelet_suite.py",                      "Morlet CWT suite: template/station scalograms, power spectrum, temporal"),
+    # NOTE: template_exceedance/exceedance_rates.py is intentionally NOT a stage — the per-template
+    # count-enrichment null is methodologically flawed (degenerate circular-shift + unrepresentative
+    # quiet null segment); see template_exceedance/SUMMARY.txt (RETRACTED). Kept standalone as a lesson.
+    ("syncevents", "sync_events.py",                        "gallery of cross-station synchronous coincidences (same TOL_S=600 as the synchrony test)"),
+    ("cumulative", "cumulative_metrics.py",                 "cumulative detection-rate curves per station/dataset with eruptive overlays"),
 ]
 
 

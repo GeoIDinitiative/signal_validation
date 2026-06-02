@@ -27,11 +27,21 @@ from scipy.signal import find_peaks
 from swcc_accumulated import per_sim_scores, combine, PEAK_SEP
 from swcc_comprehensive import STATIONS, COMPONENTS, THRESHOLD
 from credibility_checks import phase_randomize
+from swcc_vector import load_cont_complex, surrogate   # vector (complex) observed + dtype-aware null
+import phd_env                                          # branch-aware OUT / components / tracks
+
+# detection "tracks": the established scalar detectors (dir, mag) and the new vector |R| detector.
+# Kept separate so the scalar synchrony result is unchanged and the vector result is directly comparable.
+# In a phd_output branch run these collapse to one track named after the branch (phd_env).
+_LEGACY_TRACKS = {"scalar": ["dir", "mag"], "vec": ["vec"]}
+TRACKS = phd_env.tracks(_LEGACY_TRACKS)
+COMPS = phd_env.components(["dir", "mag", "vec"])
+COMP2TRACK = phd_env.comp_track_map(_LEGACY_TRACKS)
 
 warnings.filterwarnings("ignore")
 BASE = Path("/home/owen/tilt_validation")
 CONT = BASE / "continuous_bandpassed"
-OUT  = BASE / "SWCC_comprehensive" / "continuous"
+OUT  = phd_env.out(BASE / "SWCC_comprehensive" / "continuous")
 N_NULL, N_PERM, TOL_S = 300, 2000, 600
 VETO_PRE = 1800                  # s — also veto contamination just BEFORE a peak (bandpass ringing
 #                                  precedes the correlation peak); makes the veto symmetric, not forward-only
@@ -44,6 +54,8 @@ CODA_ETAS = eq[eq.magnitude >= CODA_MAG]["p_wave_eta"].to_numpy()
 
 
 def load_cont(ds, st, comp):
+    if comp == "vec":                                  # complex observed: dir (c1) + i·dir2 (c2)
+        return load_cont_complex(ds, st)
     f = CONT / ds / f"{st}_{comp}_0p001-0p01Hz_cont_bp.feather"
     if not f.exists():
         return None
@@ -54,7 +66,10 @@ def load_cont(ds, st, comp):
 def to_grid(d):
     t0, t1 = d["datetime"].iloc[0], d["datetime"].iloc[-1]
     grid = pd.date_range(t0, t1, freq="1s")
-    x = pd.Series(np.nan, index=grid); x.loc[d["datetime"].values] = d["bandpassed"].to_numpy()
+    cplx = np.iscomplexobj(d["bandpassed"].to_numpy())          # vec path carries a complex signal
+    x = pd.Series((np.nan + 0j) if cplx else np.nan, index=grid,
+                  dtype=complex if cplx else float)
+    x.loc[d["datetime"].values] = d["bandpassed"].to_numpy()
     v = pd.Series(False, index=grid); v.loc[d["datetime"].values] = d["veto"].to_numpy()
     return grid.values, x.to_numpy(), v.to_numpy(bool)
 
@@ -86,13 +101,13 @@ def detect(gt, score, veto, fdet, fsig, M=PEAK_SEP):
     return recs
 
 
-def null_floor(host, ds, st, n=N_NULL, seed=5):
+def null_floor(host, ds, st, comp="dir", n=N_NULL, seed=5):
     """Two-tier floors per method: (95th-pct = detection, 99th-pct = significance)."""
     rng = np.random.default_rng(seed)
     mx, stk = [], []
     for _ in range(n):
-        xs = phase_randomize(host, rng)
-        sc = per_sim_scores(xs, ds, st)
+        xs = surrogate(host, rng)                      # complex-aware for comp='vec'
+        sc = per_sim_scores(xs, ds, st, comp)
         if not sc:
             continue
         m, s = combine(sc)
@@ -124,32 +139,33 @@ def main():
     L = ["DESIGN B — full-continuous-signal detection (gap-aware accumulated SWCC + veto)",
          "=" * 70, ""]
 
-    # cache scores + detections (synchrony uses the SIGNIFICANT set)
-    det = {m: {ds: {} for ds in STATIONS} for m in ("max", "stack")}
+    # cache scores + detections (synchrony uses the SIGNIFICANT set), separated by track
+    det = {m: {tr: {ds: {} for ds in STATIONS} for tr in TRACKS} for m in ("max", "stack")}
     spans = {ds: {} for ds in STATIONS}
     usage, counts, all_dets = [], [], []
     for ds, sts in STATIONS.items():
         for st in sts:
-            per_st_times = {"max": [], "stack": []}
-            for comp in COMPONENTS:
+            per_st_times = {tr: {"max": [], "stack": []} for tr in TRACKS}
+            for comp in COMPS:
                 d = load_cont(ds, st, comp)
                 if d is None:
                     continue
                 gt, gx, gv = to_grid(d)
-                sims = per_sim_scores(gx, ds, st)
+                sims = per_sim_scores(gx, ds, st, comp)
                 if not sims:
                     continue
                 M, S = combine(sims)
                 # null host = longest clean (un-vetoed, finite) stretch
                 fin = np.isfinite(gx) & ~gv
                 host = gx[fin][:20000] if fin.sum() > 20000 else gx[fin]
-                (m95, m99), (s95, s99) = null_floor(host, ds, st)
+                (m95, m99), (s95, s99) = null_floor(host, ds, st, comp)
                 dM = detect(gt, M, gv, m95, m99)
                 dS = detect(gt, S, gv, s95, s99)
                 sM = [r["peak_time"] for r in dM if r["significant"]]
                 sS = [r["peak_time"] for r in dS if r["significant"]]
-                per_st_times["max"].append(pd.Series(sM))
-                per_st_times["stack"].append(pd.Series(sS))
+                tr = COMP2TRACK.get(comp, comp)
+                per_st_times[tr]["max"].append(pd.Series(sM))
+                per_st_times[tr]["stack"].append(pd.Series(sS))
                 spans[ds][st] = (gt[0], gt[-1])
                 for method, recs, f95, f99 in [("max", dM, m95, m99), ("stack", dS, s95, s99)]:
                     for r in recs:
@@ -167,14 +183,15 @@ def main():
                     usage.append({"dataset": ds, "station": st,
                                   "analysed": int(np.isfinite(gx).sum()),
                                   "grid": len(gx), "veto_pct": 100*gv.mean()})
-            for m in ("max", "stack"):
-                if per_st_times[m]:
-                    allt = pd.concat(per_st_times[m]).sort_values().reset_index(drop=True)
-                    keep = []
-                    for x in allt:
-                        if not keep or (x-keep[-1]).total_seconds() > TOL_S:
-                            keep.append(x)
-                    det[m][ds][st] = pd.to_datetime(pd.Series(keep))
+            for tr in TRACKS:
+                for m in ("max", "stack"):
+                    if per_st_times[tr][m]:
+                        allt = pd.concat(per_st_times[tr][m]).sort_values().reset_index(drop=True)
+                        keep = []
+                        for x in allt:
+                            if not keep or (x-keep[-1]).total_seconds() > TOL_S:
+                                keep.append(x)
+                        det[m][tr][ds][st] = pd.to_datetime(pd.Series(keep))
         print(f"   detected {ds}")
     sfx0 = '' if CODA_VETO_ON else '_nocoda'
     pd.DataFrame(counts).to_csv(OUT / f"detect_counts{sfx0}.csv", index=False)
@@ -197,41 +214,42 @@ def main():
                  f"STACK detect={cs.stack_detect.sum()} above-floor={cs.stack_signif.sum()}")
     L.append("")
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig, axes = plt.subplots(len(TRACKS), 2, figsize=(14, 5*len(TRACKS)), squeeze=False)
     rng = np.random.default_rng(11)
     sync_rows = []
-    for col, method in enumerate(["max", "stack"]):
-        L.append(f"(2) SYNCHRONY — METHOD {method.upper()}")
-        for ds in STATIONS:
-            stt = {k: v for k, v in det[method][ds].items() if len(v)}
-            ndet = {k: len(v) for k, v in stt.items()}
-            if len(stt) < 2:
-                L.append(f"   {ds}: <2 stations with detections ({ndet})")
-                sync_rows.append({"dataset": ds, "method": method, "n_stations": len(stt),
-                                  "observed": 0, "chance": np.nan, "p": np.nan})
-                continue
-            obs = count_coincidences(stt)
-            null = np.empty(N_PERM)
-            for k in range(N_PERM):
-                sh = {}
-                for st, t in stt.items():
-                    t0, t1 = spans[ds][st]
-                    span = (pd.Timestamp(t1)-pd.Timestamp(t0)).total_seconds()
-                    off = rng.uniform(0, span)
-                    nt = ((pd.to_datetime(t)-pd.Timestamp(t0)).dt.total_seconds()+off) % span
-                    sh[st] = pd.to_datetime(pd.Timestamp(t0)+pd.to_timedelta(nt, unit="s"))
-                null[k] = count_coincidences(sh)
-            p = float((null >= obs).mean())
-            sync_rows.append({"dataset": ds, "method": method, "n_stations": len(stt),
-                              "observed": obs, "chance": round(float(null.mean()), 3), "p": p})
-            L.append(f"   {ds:11s}: observed={obs} chance={null.mean():.2f} p={p:.4f}  det/station={ndet}")
-            axes[col].hist(null, bins=range(0, max(6, obs+2)), alpha=0.5, label=f"{ds} chance")
-            axes[col].axvline(obs, ls="--", lw=2, label=f"{ds} obs={obs} (p={p:.3f})")
-        axes[col].set_title(f"{method.upper()} detector")
-        axes[col].set_xlabel("number of coincident cross-station events")
-        axes[col].set_ylabel("count over time-shift permutations")
-        axes[col].legend(fontsize=8); axes[col].grid(alpha=0.3)
-        L.append("")
+    for row, tr in enumerate(TRACKS):
+        for col, method in enumerate(["max", "stack"]):
+            L.append(f"(2) SYNCHRONY — TRACK {tr.upper()} · METHOD {method.upper()}")
+            for ds in STATIONS:
+                stt = {k: v for k, v in det[method][tr][ds].items() if len(v)}
+                ndet = {k: len(v) for k, v in stt.items()}
+                if len(stt) < 2:
+                    L.append(f"   {ds}: <2 stations with detections ({ndet})")
+                    sync_rows.append({"track": tr, "dataset": ds, "method": method,
+                                      "n_stations": len(stt), "observed": 0, "chance": np.nan, "p": np.nan})
+                    continue
+                obs = count_coincidences(stt)
+                null = np.empty(N_PERM)
+                for k in range(N_PERM):
+                    sh = {}
+                    for st, t in stt.items():
+                        t0, t1 = spans[ds][st]
+                        span = (pd.Timestamp(t1)-pd.Timestamp(t0)).total_seconds()
+                        off = rng.uniform(0, span)
+                        nt = ((pd.to_datetime(t)-pd.Timestamp(t0)).dt.total_seconds()+off) % span
+                        sh[st] = pd.to_datetime(pd.Timestamp(t0)+pd.to_timedelta(nt, unit="s"))
+                    null[k] = count_coincidences(sh)
+                p = float((null >= obs).mean())
+                sync_rows.append({"track": tr, "dataset": ds, "method": method, "n_stations": len(stt),
+                                  "observed": obs, "chance": round(float(null.mean()), 3), "p": p})
+                L.append(f"   {ds:11s}: observed={obs} chance={null.mean():.2f} p={p:.4f}  det/station={ndet}")
+                axes[row][col].hist(null, bins=range(0, max(6, obs+2)), alpha=0.5, label=f"{ds} chance")
+                axes[row][col].axvline(obs, ls="--", lw=2, label=f"{ds} obs={obs} (p={p:.3f})")
+            axes[row][col].set_title(f"{tr.upper()} · {method.upper()} detector")
+            axes[row][col].set_xlabel("number of coincident cross-station events")
+            axes[row][col].set_ylabel("count over time-shift permutations")
+            axes[row][col].legend(fontsize=8); axes[row][col].grid(alpha=0.3)
+            L.append("")
 
     sfx = "" if CODA_VETO_ON else "_nocoda"
     pd.DataFrame(sync_rows).to_csv(OUT / f"synchrony{sfx}.csv", index=False)

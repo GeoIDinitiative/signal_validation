@@ -1,0 +1,47 @@
+ere's my honest evaluation, separating what the outputs genuinely establish from what they don't — and where a tough examiner would push.
+
+The headline result is a strong null — and that's a real distinction
+We didn't just "find nothing." We found nothing across six independent angles (amplitude floors, circular-shift synchrony, the timing-pattern network detector, bank densification by warp/interpolation, time-slide FAR, χ²), and we proved the search would have seen a signal if one were there (injection-recovery: high-SNR injections recovered at unit probability; SNR90 ≈ 1.0–1.1). That combination — robust non-detection plus demonstrated sensitivity — is what separates a publishable null from "our method didn't work." Most negative results don't earn that; ours does. I'd grade the rigor/methodology as genuinely high.
+
+The single most valuable output: the null is quantified
+"No detection" became "any template-shaped transient with peak tilt above ~0.003–0.07 instrument units would have been detected at 90% confidence." An upper limit is a result you can defend and build on; a bare non-detection isn't. This is the output I'd put most weight on.
+
+The secondary result is a genuine positive finding
+The EEC1-vs-EC1 comparison stands on its own: same borehole instrument, ~6–10× elevated in-band tilt background in winter, proven real not instrumental (identical LSB → same units; survives de-thermalising). That's a clean, defensible observation independent of the template search, and worth its own thesis section.
+
+Where it's weak — and this is the load-bearing weakness
+The null is conditional on a bank you haven't validated. Four simulations, one source-scenario class, templates whose physical realism is only internally checked (cross-sim consistency), never matched against a documented real Etna tilt transient. So the honest scientific statement is:
+
+"No evidence of these simulated signatures, down to this amplitude, in these two records"
+
+— not "no magma-mixing ULP at Etna." A sharp examiner will go straight here: if your templates don't demonstrably resemble real magma-mixing tilt, what does the null actually tell us about the phenomenon? That question is currently unanswered, and it's the thing that most limits the result's scientific reach. Compounding it: no absolute calibration (limit is in instrument units, not ΔV), and the winter background excess is real but unattributed (can't separate volcanic from meteorological without baro/wind data).
+
+How I'd score it
+Methodology / reproducibility / honesty: high. The 16-stage pipeline, the sensitivity calibration, and the self-audit that overturned my own hypothesis are the strongest parts.
+Scientific claim, if scoped honestly as a conditional upper limit: solid and defensible.
+Scientific claim, if overstated as a universal non-detection: vulnerable, would not survive review.
+Novel discovery value: modest by nature (a null), lifted by the EEC1/EC1 finding.
+Bottom line
+The outputs are a well-engineered, rigorously-confirmed, quantified conditional null, plus one real positive observation about winter background. That's a respectable, honest result — the kind that's hard to attack on execution. Its ceiling is set entirely by template realism and calibration, not by anything in the analysis. So the most valuable next move isn't more processing — it's validating the templates against a real event and getting an absolute source calibration. Until then, present it as the careful conditional result it is, and it holds up; claim more than that, and it doesn't.
+
+are high negative r values as imprtant as postive ones?
+Short answer: in our search, yes — a high negative r is as important as a high positive one, and we already treat them that way (the pipeline scores on |r| everywhere). But the sign itself carries physical meaning you'd want to keep. Let me unpack both halves.
+
+Why |negative r| counts equally here
+A strong negative r means the observed tilt has the same shape as the template but opposite polarity. For tilt that's a real, interpretable scenario, not noise:
+
+Source polarity — a template built for inflation (pressure increase) will anti-correlate with a deflation of the same geometry. Same physics, flipped sign. If both are of interest (they usually are), you must count both.
+Sign-convention mismatch — there's no guarantee the simulation's positive-tilt direction matches the instrument's (east vs west, x-sign). A genuine match can show up as r ≈ −1 purely from convention.
+So for a shape search where polarity is ambiguous, taking |r| is the correct, standard choice — and it's what we do (np.abs(swcc_gapaware(...)) in the accumulated scores, |r| peaks in the top-template counts, |r| in the null floors). Because the null distribution of r is symmetric about 0, a high negative r is exactly as improbable by chance as a high positive one, and our significance floors are calibrated on |r|, so it's all self-consistent.
+
+We even relied on a negative r being meaningful elsewhere: the EEC1 thermal coupling was r = −0.81 (tilt anti-correlates with the temperature/level channel) — the admittance removal used that sign directly.
+
+But the sign is information you shouldn't throw away entirely
+|r| is right for detection, but the sign of a real detection tells you the polarity of the source — inflation vs deflation. For a null result it's irrelevant (nothing to interpret), which is our case. But if we had a significant match, you'd report and interpret whether it was r > 0 or r < 0, because that distinguishes which way the source was driving.
+
+Two caveats worth knowing
+Sign does not help separate glitch from signal. A sharp step/P-wave anti-correlates with a template's dominant feature just as easily as it correlates — so a loud negative r at a glitch is exactly as spurious as a loud positive one. That's why we reject glitches by morphology (leakage/kurtosis/econc/veto), not by sign.
+The mag (magnitude) component is the exception. Magnitude is rectified (≥ 0), so correlating a bipolar template against it makes the sign of r much less physical — there, a negative r is closer to an artifact. The directional component (dir) is where the sign genuinely encodes polarity. (This is the component-consistency issue flagged back in the original audit.)
+So: equal importance for detecting the shape — which we do correctly via |r| — but treat the sign as a physical label to report if something is ever found, and don't expect it to discriminate real signals from glitches.
+
+

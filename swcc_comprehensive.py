@@ -153,12 +153,23 @@ def template_station(dataset, station):
     return station
 
 
-def load_template(dataset, station, sim, template):
-    tstation = template_station(dataset, station)
-    f = TPL_DIR / dataset / f"{tstation}_{sim}_{template}_0p001-0p01Hz_tpl.csv"
+DOF_DIR = BASE_DIR / "tilt_templates_dofs"   # full-resolution templates rebuilt from the sim DOFs (proj_x/proj_y)
+
+
+def load_template(dataset, station, sim, template, comp="dir"):
+    """Component-aware band-passed template from the full-resolution DOFs:
+    comp='dir' → proj_x (tilt-x, for the observed directional channel);
+    comp='mag' → √(proj_x²+proj_y²) (tilt magnitude);
+    comp='vec' → COMPLEX 2-component template proj_x + i·proj_y (for the vector matched filter).
+    DOF files are keyed by OBSERVED station."""
+    f = DOF_DIR / dataset / f"{station}_{sim}_{template}_dof.csv"
     if not f.exists():
         return None
-    return pd.read_csv(f)["x"].to_numpy(float)
+    d = pd.read_csv(f)
+    if comp == "vec":
+        return d["dir_bp"].to_numpy(float) + 1j * d["ortho_bp"].to_numpy(float)
+    col = {"mag": "mag_bp", "dir2": "ortho_bp"}.get(comp, "dir_bp")   # dir2 = proj_y (Y axis)
+    return d[col].to_numpy(float)
 
 
 # ── validation gate ──────────────────────────────────────────────────────────

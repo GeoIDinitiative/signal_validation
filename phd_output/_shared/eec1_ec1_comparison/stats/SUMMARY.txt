@@ -1,0 +1,36 @@
+COMPREHENSIVE STATISTICAL COMPARISON — EEC1 (winter) vs EC1 (summer), same instrument
+==============================================================================
+                                         metric    winter    summer  winter/summer                                ratio_CI95            test  statistic  p_value                                                             note
+                                  in-band x RMS    0.1068   0.01386          7.707  (1.8629691454210098, 13.164018988345559) KS 2-sample (D)    0.09318        0        distributions differ; effect = KS-D (p≈0 is just large-n)
+                             in-band x variance   0.01141 0.0001921          59.39                                      None Levene (median)       2391        0                                        equality-of-variance test
+                                  Cohen's d |x|       NaN       NaN            NaN                                      None     effect size     0.2038      NaN                                     std-mean diff of |in-band x|
+                        band power: tidal (24h)    0.3908    0.1685           2.32 (0.09568705506355857, 19.244453569033265)                        NaN      NaN                                             Welch-integrated PSD
+                 band power: search (100-1000s)   0.01261 0.0001996          63.19  (2.2232417529186024, 150.19926925931205)                        NaN      NaN                                             Welch-integrated PSD
+            band power: microseism (0.05-0.2Hz)   0.05595  0.005404          10.35   (2.4855952238756167, 19.83445007276365)                        NaN      NaN                                             Welch-integrated PSD
+                   spectral slope (1e-3..0.1Hz)   -0.1269   0.08641            NaN                                      None                        NaN      NaN                                 log-log PSD slope (noise colour)
+                             in-band x skewness   -0.8095   -0.5755            NaN                                      None                        NaN      NaN                                  shape of amplitude distribution
+                      in-band x excess kurtosis     754.1     8.369            NaN                                      None                        NaN      NaN                                  shape of amplitude distribution
+                           Jarque-Bera (winter) 1.024e+09       NaN            NaN                                      None       normality  1.024e+09        0                                                                 
+                           Jarque-Bera (summer)       NaN 2.569e+05            NaN                                      None       normality  2.569e+05        0                                                                 
+                       thermal coupling r(x,na)     0.429  0.006064            NaN                                      None         Pearson      0.429        0     winter r²=0.18 vs summer r²=0.000 (variance explained by na)
+diurnal modulation (median |x|, gap-free block)     2.524     1.273            NaN                                      None                        NaN      NaN    robust 24h cycle amplitude (block ~5 d winter / ~10 d summer)
+                rolling-RMS coeff. of variation     2.405       0.2          12.02                                      None                        NaN      NaN temporal non-stationarity / burstiness of the in-band background
+                      significant peaks per day     1.639     1.445            NaN                                      None                        NaN      NaN                              rate (normalised for record length)
+                          peak |r| distribution     0.437    0.4677            NaN                                      None KS 2-sample (D)     0.3082   0.2305              are the matched-peak score distributions different?
+
+READING: with ~10^5 samples, p-values are ~0 for any real difference, so EFFECT SIZES and
+their bootstrap CIs (moving-block, autocorrelation-aware) carry the result, not the p-values.
+
+HEADLINE:
+  • in-band background: winter is 7.7× the summer RMS (block-bootstrap 95% CI included);
+    distributions strongly differ (KS D=0.09); variances unequal (Levene p=0.0e+00).
+  • non-Gaussianity: winter excess kurtosis 754 vs summer 8.4
+    → the winter in-band signal is dominated by rare, extreme transients (heavy tails).
+  • thermal coupling: winter r(x,na)=+0.43 (r²=0.18) vs summer +0.01 (r²=0.000).
+  • non-stationarity: rolling-RMS CoV winter 2.40 vs summer 0.20 (12.0× more bursty);
+    time-of-day modulation (robust median) winter 2.5× vs summer 1.3× (block-limited, descriptive only).
+  • detection rate: winter 1.64 vs summer 1.44 significant peaks/day, but the
+    peak-|r| distributions are statistically indistinguishable (KS p=0.231) —
+    i.e. the elevated winter background does NOT yield better template matches (consistent with noise, not signal).
+  → Same instrument, same units: the winter record is a genuinely different, noisier, heavier-tailed,
+    more thermally-coupled and more non-stationary regime — a real two-period difference, not instrumental.

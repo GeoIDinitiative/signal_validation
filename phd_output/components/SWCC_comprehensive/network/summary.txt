@@ -1,0 +1,25 @@
+NETWORK MATCHED FILTER — coherent cross-station stack (scalar dir vs vector |R|)
+==============================================================================
+
+### TRACK = X  (component 'dir')
+ingv: 2 stations  net_floor=0.427  single_floor=0.592
+
+experiment: 5 stations  net_floor=0.296  single_floor=0.569
+
+### TRACK = Y  (component 'dir2')
+ingv: 2 stations  net_floor=0.446  single_floor=0.628
+
+experiment: 5 stations  net_floor=0.308  single_floor=0.660
+
+ingv        X      NETWORK : SNR50=0.41  SNR90=0.65
+ingv        X      single  : SNR50=0.60  SNR90=0.83
+ingv        Y      NETWORK : SNR50=0.45  SNR90=0.68
+ingv        Y      single  : SNR50=0.65  SNR90=0.91
+experiment  X      NETWORK : SNR50=0.33  SNR90=0.47
+experiment  X      single  : SNR50=0.41  SNR90=0.64
+experiment  Y      NETWORK : SNR50=0.35  SNR90=0.47
+experiment  Y      single  : SNR50=0.60  SNR90=0.75
+
+A lower NETWORK SNR90 than single-station = the coherent stack detects smaller
+tilt amplitudes (~sqrt(N) gain). The vector |R| track uses both axes coherently and
+sets the deepest sensitivity floor of the search.

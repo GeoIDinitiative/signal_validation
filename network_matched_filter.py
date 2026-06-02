@@ -31,11 +31,13 @@ from pathlib import Path
 
 from swcc_gapaware import swcc_gapaware
 from swcc_comprehensive import load_template, SIMS
+from swcc_vector import swcc_score, load_cont_complex   # vector |R| network stack
+import phd_env                                           # branch-aware OUT / component set
 
 warnings.filterwarnings("ignore")
 BASE = Path("/home/owen/tilt_validation")
 CONT = BASE / "continuous_bandpassed"
-OUT  = BASE / "SWCC_comprehensive" / "network"
+OUT  = phd_env.out(BASE / "SWCC_comprehensive" / "network")
 STATIONS = {"ingv": ["ECPN", "EEC1"], "experiment": ["EC1", "EC10", "ECIT", "ECOR", "EMAS"]}
 TEMPLATES = ["template1", "template2", "template3"]
 COMP = "dir"
@@ -47,10 +49,15 @@ WIN, TOL = 10002, 400
 def load_dataset(ds):
     sigs, starts, tpls = {}, {}, {}
     for st in STATIONS[ds]:
-        f = CONT / ds / f"{st}_{COMP}_0p001-0p01Hz_cont_bp.feather"
-        if not f.exists():
-            continue
-        d = pd.read_feather(f)
+        if COMP == "vec":                                # complex observed dir + i·dir2
+            d = load_cont_complex(ds, st)
+            if d is None:
+                continue
+        else:
+            f = CONT / ds / f"{st}_{COMP}_0p001-0p01Hz_cont_bp.feather"
+            if not f.exists():
+                continue
+            d = pd.read_feather(f)
         ok = (~d["veto"].to_numpy(bool)) & np.isfinite(d["bandpassed"].to_numpy())
         cs = np.concatenate(([0], np.cumsum(ok.astype(int))))
         vs = np.where((cs[WIN:] - cs[:-WIN]) == WIN)[0]
@@ -60,7 +67,7 @@ def load_dataset(ds):
         starts[st] = vs
         for sim in SIMS:
             for tn in TEMPLATES:
-                tpls[(st, sim, tn)] = load_template(ds, st, sim, tn)
+                tpls[(st, sim, tn)] = load_template(ds, st, sim, tn, COMP)
     return sigs, starts, tpls
 
 
@@ -75,7 +82,7 @@ def score(wins, stations, tpls):
                 T = tpls.get((st, sim, tn))
                 if T is None:
                     continue
-                rs[st] = np.abs(swcc_gapaware(T, wins[st], min_valid_frac=0.8))
+                rs[st] = swcc_score(T, wins[st], min_valid_frac=0.8)   # |r| or |R|
                 M0 = len(T)
             if len(rs) < 2:
                 continue
@@ -97,74 +104,94 @@ def draw_windows(stations, sigs, starts, rng, inject=None):
         w = sigs[st][s0:s0+WIN].copy()
         if inject is not None:
             sim, tn = inject
-            T = tpls_global[(st, sim, tn)]
-            M = len(T); p = (WIN - M) // 2
-            nrms = np.sqrt(np.mean(w**2))
-            if T.std() > 0 and nrms > 0:
-                w[p:p+M] += inject_snr * nrms * (T - T.mean()) / T.std()
+            T = tpls_global.get((st, sim, tn))
+            if T is not None:                        # may be missing (e.g. EMAS sim1 has no DOFs)
+                M = len(T); p = (WIN - M) // 2
+                nrms = np.sqrt(np.mean(np.abs(w)**2))    # band-RMS (real or complex host)
+                if T.std() > 0 and nrms > 0:
+                    w[p:p+M] += inject_snr * nrms * (T - T.mean()) / T.std()
         wins[st] = w
     return wins
 
 
+# scalar = single-axis dir ; vec = 2-component |R|. In a phd_output branch run this becomes the
+# branch's own component(s): components→{X:dir, Y:dir2}, magnitude→{magnitude:mag}, vector→{vector:vec}.
+if phd_env.active():
+    _NETLAB = {"dir": "X", "dir2": "Y", "mag": "magnitude", "vec": "vector"}
+    TRACK_COMP = {_NETLAB.get(c, c): c for c in phd_env.components(["dir", "vec"])}
+else:
+    TRACK_COMP = {"scalar": "dir", "vec": "vec"}
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    global tpls_global, inject_snr
+    global tpls_global, inject_snr, COMP
     rows = []
-    L = ["NETWORK MATCHED FILTER — coherent cross-station stack", "=" * 54, ""]
-    for ds in STATIONS:
-        sigs, starts, tpls = load_dataset(ds)
-        stations = [s for s in STATIONS[ds] if s in sigs]
-        if len(stations) < 2:
-            continue
-        tpls_global = tpls
-        rng = np.random.default_rng(21)
+    L = ["NETWORK MATCHED FILTER — coherent cross-station stack (scalar dir vs vector |R|)",
+         "=" * 78, ""]
+    for track, comp in TRACK_COMP.items():
+        COMP = comp
+        L.append(f"### TRACK = {track.upper()}  (component '{comp}')")
+        for ds in STATIONS:
+            sigs, starts, tpls = load_dataset(ds)
+            stations = [s for s in STATIONS[ds] if s in sigs]
+            if len(stations) < 2:
+                continue
+            tpls_global = tpls
+            rng = np.random.default_rng(21)
 
-        # noise-only floors (no injection): 99th-pct of NetMax and single max
-        inject_snr = 0
-        net_n, sing_n = [], []
-        for _ in range(N_FLOOR):
-            wins = draw_windows(stations, sigs, starts, rng, inject=None)
-            nb, sb = score(wins, stations, tpls)
-            net_n.append(nb); sing_n.append(max(sb.values()))
-        net_floor = float(np.percentile(net_n, 99))
-        sing_floor = float(np.percentile(sing_n, 99))
-        L.append(f"{ds}: {len(stations)} stations  net_floor={net_floor:.3f}  single_floor={sing_floor:.3f}")
-
-        for snr in SNRS:
-            inject_snr = snr
-            rec_net = rec_sing = 0
-            for _ in range(N_TRIALS):
-                inj = (SIMS[rng.integers(len(SIMS))], TEMPLATES[rng.integers(len(TEMPLATES))])
-                wins = draw_windows(stations, sigs, starts, rng, inject=inj)
+            # noise-only floors (no injection): 99th-pct of NetMax and single max
+            inject_snr = 0
+            net_n, sing_n = [], []
+            for _ in range(N_FLOOR):
+                wins = draw_windows(stations, sigs, starts, rng, inject=None)
                 nb, sb = score(wins, stations, tpls)
-                rec_net += nb > net_floor
-                rec_sing += max(sb.values()) > sing_floor
-            rows.append({"dataset": ds, "n_stations": len(stations), "snr": snr,
-                         "p_network": rec_net/N_TRIALS, "p_single": rec_sing/N_TRIALS})
-            print(f"  {ds} SNR={snr:>4}: P_network={rec_net/N_TRIALS:.2f}  P_single={rec_sing/N_TRIALS:.2f}")
-        L.append("")
+                net_n.append(nb); sing_n.append(max(sb.values()))
+            net_floor = float(np.percentile(net_n, 99))
+            sing_floor = float(np.percentile(sing_n, 99))
+            L.append(f"{ds}: {len(stations)} stations  net_floor={net_floor:.3f}  single_floor={sing_floor:.3f}")
+
+            for snr in SNRS:
+                inject_snr = snr
+                rec_net = rec_sing = 0
+                for _ in range(N_TRIALS):
+                    inj = (SIMS[rng.integers(len(SIMS))], TEMPLATES[rng.integers(len(TEMPLATES))])
+                    wins = draw_windows(stations, sigs, starts, rng, inject=inj)
+                    nb, sb = score(wins, stations, tpls)
+                    rec_net += nb > net_floor
+                    rec_sing += max(sb.values()) > sing_floor
+                rows.append({"track": track, "dataset": ds, "n_stations": len(stations), "snr": snr,
+                             "p_network": rec_net/N_TRIALS, "p_single": rec_sing/N_TRIALS})
+                print(f"  {track}/{ds} SNR={snr:>4}: P_network={rec_net/N_TRIALS:.2f}  "
+                      f"P_single={rec_sing/N_TRIALS:.2f}")
+            L.append("")
     df = pd.DataFrame(rows); df.to_csv(OUT / "recovery.csv", index=False)
 
     fig, ax = plt.subplots(figsize=(9, 6))
-    for ds, c in [("ingv", "#1f2937"), ("experiment", "#dc2626")]:
-        g = df[df.dataset == ds].sort_values("snr")
-        if g.empty:
-            continue
-        n = int(g.n_stations.iloc[0])
-        ax.plot(g.snr, g.p_network, "-", color=c, marker="o", label=f"{ds} · NETWORK (N={n})")
-        ax.plot(g.snr, g.p_single, "--", color=c, marker="s", alpha=0.7, label=f"{ds} · single station")
-        for col, lab in [("p_network", "NETWORK"), ("p_single", "single")]:
-            y, x = g[col].to_numpy(), g.snr.to_numpy()
-            s90 = float(np.interp(0.9, y, x)) if y.max() >= 0.9 else np.nan
-            s50 = float(np.interp(0.5, y, x)) if y.max() >= 0.5 else np.nan
-            L.append(f"{ds:11s} {lab:8s}: SNR50={s50:.2f}  SNR90={s90:.2f}")
+    style = {("ingv", "scalar"): ("#1f2937", "-"), ("ingv", "vec"): ("#1f2937", ":"),
+             ("experiment", "scalar"): ("#dc2626", "-"), ("experiment", "vec"): ("#dc2626", ":")}
+    for ds in ["ingv", "experiment"]:
+        for track in TRACK_COMP:
+            g = df[(df.dataset == ds) & (df.track == track)].sort_values("snr")
+            if g.empty:
+                continue
+            c, ls = style.get((ds, track), ("k", "-"))
+            n = int(g.n_stations.iloc[0])
+            ax.plot(g.snr, g.p_network, ls, color=c, marker="o",
+                    label=f"{ds} · {track} NETWORK (N={n})")
+            for col, lab in [("p_network", "NETWORK"), ("p_single", "single")]:
+                y, x = g[col].to_numpy(), g.snr.to_numpy()
+                s90 = float(np.interp(0.9, y, x)) if y.max() >= 0.9 else np.nan
+                s50 = float(np.interp(0.5, y, x)) if y.max() >= 0.5 else np.nan
+                L.append(f"{ds:11s} {track:6s} {lab:8s}: SNR50={s50:.2f}  SNR90={s90:.2f}")
     ax.axhline(0.9, color="gray", ls=":", alpha=0.6); ax.axhline(0.5, color="gray", ls=":", alpha=0.6)
     ax.set(xlabel="injection SNR (template band-RMS / noise band-RMS)", ylabel="detection probability",
-           title="Network matched filter vs single-station sensitivity")
-    ax.set_ylim(0, 1.02); ax.legend(fontsize=9); ax.grid(alpha=0.3)
+           title="Network matched filter — scalar (dir) vs vector (|R|) coherent stack")
+    ax.set_ylim(0, 1.02); ax.legend(fontsize=8); ax.grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(OUT / "recovery.png", dpi=300); plt.close(fig)
     L += ["", "A lower NETWORK SNR90 than single-station = the coherent stack detects smaller",
-          "tilt amplitudes (~sqrt(N) gain). This sets the deepest sensitivity floor of the search."]
+          "tilt amplitudes (~sqrt(N) gain). The vector |R| track uses both axes coherently and",
+          "sets the deepest sensitivity floor of the search."]
     (OUT / "summary.txt").write_text("\n".join(L))
     print("\n" + "\n".join(L)); print(f"\nOutputs → {OUT}")
 

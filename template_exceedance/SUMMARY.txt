@@ -1,0 +1,29 @@
+TEMPLATE EXCEEDANCE / ENRICHMENT — RESULT RETRACTED (methodological artifact)
+============================================================================
+This procedure tried to calibrate the raw per-template above-floor counts with a circular-shift
+null of a single "longest clean block" per station, scaled to record length. IT DOES NOT WORK,
+and its enrichment / p-values must NOT be used. The "61 combinations p<Bonferroni" are ARTIFACTS.
+
+WHY IT FAILS:
+  1. DEGENERACY — circularly shifting one station's signal only permutes which window sits at which
+     time, so the COUNT of |r| above a fixed floor is near-invariant to the shift. The "null"
+     collapses to the segment's own count; it does not test the template-data match.
+  2. NON-STATIONARITY — the null segment (longest gap-free block) is a QUIET stretch, whereas the
+     real above-floor peaks live in the record's bursty parts (winter rolling-RMS CoV=2.4,
+     kurtosis=754). So expected ≈ quiet_count × K ≈ 0 while observed ≫ 0 → enrichment explodes
+     (the many exp=0.0 / enrichment=nan rows). This measures "is the full bursty record louder than
+     one quiet block" — trivially yes — NOT "does the template match above chance".
+
+These artifact "enrichments" contradict every robust, confound-free test — time-slide FAR, the
+circular-shift cross-station SYNCHRONY, and the four-method correlation BATTERY (SWCC / subspace /
+envelope / DTW) — ALL of which are NULL. When a supportive check disagrees with all of those, the
+supportive check is wrong.
+
+CORRECT POSITION: there is no cheap per-template COUNT null free of confounds here (circular-shift
+is degenerate / non-stationarity-sensitive; phase-randomisation under-calibrates smooth templates
+like template4). Per-template above-floor counts in top_templates/ are DESCRIPTIVE only and must be
+read alongside max_r / mean_r; per-template SIGNIFICANCE is not established by counting. The
+trustworthy significances remain FAR + synchrony + the multi-method battery, all null.
+
+Figures 01–03 are retained only as a record of the artifact and should NOT be cited.
+exceedance_table.csv holds the numbers that exposed the problem.

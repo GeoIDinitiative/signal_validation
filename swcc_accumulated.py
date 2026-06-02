@@ -29,6 +29,7 @@ from scipy.signal import find_peaks
 from swcc_gapaware import swcc_gapaware, to_full_grid
 from swcc_comprehensive import load_clean, load_template, SIMS, STATIONS, COMPONENTS, THRESHOLD
 from credibility_checks import phase_randomize
+from swcc_vector import swcc_score, surrogate          # vector (complex) detector + dtype-aware null
 
 warnings.filterwarnings("ignore")
 
@@ -39,16 +40,16 @@ PEAK_SEP = 3333          # = window length (non-overlapping detections)
 N_SURR = 200
 
 
-def per_sim_scores(sig, ds, st):
+def per_sim_scores(sig, ds, st, comp="dir"):
     """dict sim -> s_sim(t) = nanmax over templates of |r|, all clipped to common length."""
     out = {}
     for sim in SIMS:
         rs = []
         for tname in TEMPLATES:
-            tpl = load_template(ds, st, sim, tname)
+            tpl = load_template(ds, st, sim, tname, comp)
             if tpl is None:
                 continue
-            r = np.abs(swcc_gapaware(tpl, sig, min_valid_frac=MIN_VALID))
+            r = swcc_score(tpl, sig, min_valid_frac=MIN_VALID)   # |r| (scalar) or |R| (vector)
             if r.size:
                 rs.append(r)
         if rs:
@@ -64,13 +65,13 @@ def combine(scores):
     return np.nanmax(A, axis=0), np.nanmean(A, axis=0)
 
 
-def null_floors(sig_host, ds, st, n=N_SURR, seed=3):
+def null_floors(sig_host, ds, st, comp="dir", n=N_SURR, seed=3):
     """99th-pct null floor for each method from phase-randomised surrogates of the host."""
     rng = np.random.default_rng(seed)
     mx, stk, ps = [], [], []
     for _ in range(n):
-        xs = phase_randomize(sig_host, rng)
-        sc = per_sim_scores(xs, ds, st)
+        xs = surrogate(sig_host, rng)                 # complex-aware for comp='vec'
+        sc = per_sim_scores(xs, ds, st, comp)
         if not sc:
             continue
         m, s = combine(sc)
@@ -98,14 +99,14 @@ def main():
                 if clean is None:
                     continue
                 grid_t, grid_x = to_full_grid(clean)
-                sims = per_sim_scores(grid_x, dataset, station)
+                sims = per_sim_scores(grid_x, dataset, station, comp)
                 if not sims:
                     continue
                 M, S = combine(sims)
                 # host for the null = longest fully-valid run
                 sl = clean.groupby("segment_id").size()
                 host = clean[clean.segment_id == sl.idxmax()]["bandpassed"].to_numpy(float)
-                floors = null_floors(host, dataset, station)
+                floors = null_floors(host, dataset, station, comp)
 
                 methods = {"persim_mean": None, "max": (M, floors["max"]),
                            "stack": (S, floors["stack"])}

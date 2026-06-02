@@ -1,0 +1,17 @@
+metric,winter,summer,winter/summer,ratio_CI95,test,statistic,p_value,note
+in-band x RMS,0.10680962976401366,0.013859546547655715,7.7065746268646915,"(1.8629691454210098, 13.164018988345559)",KS 2-sample (D),0.09317708333333333,0.0,distributions differ; effect = KS-D (p≈0 is just large-n)
+in-band x variance,0.011408297010325672,0.00019208703050663546,59.39129247943465,,Levene (median),2391.3340288061136,0.0,equality-of-variance test
+Cohen's d |x|,,,,,effect size,0.20375022659204953,,std-mean diff of |in-band x|
+band power: tidal (24h),0.3907974464437269,0.16845366001089726,2.3199106889007113,"(0.09568705506355857, 19.244453569033265)",,,,Welch-integrated PSD
+band power: search (100-1000s),0.012612134418057657,0.00019959087672825952,63.18993445391254,"(2.2232417529186024, 150.19926925931205)",,,,Welch-integrated PSD
+band power: microseism (0.05-0.2Hz),0.055950292153752954,0.0054035124919911744,10.354430055760911,"(2.4855952238756167, 19.83445007276365)",,,,Welch-integrated PSD
+spectral slope (1e-3..0.1Hz),-0.1269118607558711,0.08641151994274486,,,,,,log-log PSD slope (noise colour)
+in-band x skewness,-0.809512022041553,-0.575536183583659,,,,,,shape of amplitude distribution
+in-band x excess kurtosis,754.0775594313701,8.368635884451098,,,,,,shape of amplitude distribution
+Jarque-Bera (winter),1023533321.9623654,,,,normality,1023533321.9623654,0.0,
+Jarque-Bera (summer),,256854.8913015928,,,normality,256854.8913015928,0.0,
+"thermal coupling r(x,na)",0.42900962414973143,0.006064176263764005,,,Pearson,0.42900962414973143,0.0,winter r²=0.18 vs summer r²=0.000 (variance explained by na)
+"diurnal modulation (median |x|, gap-free block)",2.523642155823904,1.273159449192267,,,,,,robust 24h cycle amplitude (block ~5 d winter / ~10 d summer)
+rolling-RMS coeff. of variation,2.404589199470258,0.20003063652327555,12.021104573101033,,,,,temporal non-stationarity / burstiness of the in-band background
+significant peaks per day,1.6392903633861668,1.4448358217123676,,,,,,rate (normalised for record length)
+peak |r| distribution,0.4369554794520548,0.4676636363636364,,,KS 2-sample (D),0.3082191780821918,0.23050828791657973,are the matched-peak score distributions different?

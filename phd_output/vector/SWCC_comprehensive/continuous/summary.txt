@@ -1,0 +1,19 @@
+DESIGN B — full-continuous-signal detection (gap-aware accumulated SWCC + veto)
+======================================================================
+
+(1) SIGNAL USAGE (continuous):
+
+(1b) DETECTIONS  (find_peaks wired to null floors: detect=95th, signif=99th)
+     NB: 'signif' = above per-window 99th-pct floor = SCREENING ONLY, not a detection
+     claim (single-station amplitude floor is a weak discriminator — audit finding C).
+     Real significance = synchrony (sec.2) + time-slide FAR + ULP-morphology gate.
+   ingv       : MAX  detect=120 above-floor=58 | STACK detect=329 above-floor=150
+   experiment : MAX  detect=47 above-floor=29 | STACK detect=24 above-floor=11
+
+(2) SYNCHRONY — TRACK VECTOR · METHOD MAX
+   ingv       : observed=0 chance=0.09 p=1.0000  det/station={'ECPN': 44, 'EEC1': 14}
+   experiment : observed=0 chance=0.42 p=1.0000  det/station={'EC1': 10, 'EC10': 9, 'ECIT': 3, 'ECOR': 5, 'EMAS': 2}
+
+(2) SYNCHRONY — TRACK VECTOR · METHOD STACK
+   ingv       : observed=0 chance=0.68 p=1.0000  det/station={'ECPN': 49, 'EEC1': 101}
+   experiment : observed=0 chance=0.04 p=1.0000  det/station={'EC1': 7, 'ECOR': 4}

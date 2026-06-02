@@ -1,11 +1,12 @@
-INJECTION-RECOVERY — detection sensitivity
-==============================================
+INJECTION-RECOVERY — detection sensitivity (scalar dir/mag vs vector |R|)
+============================================================
 
-ingv        MAX  : SNR50=0.69  SNR90=1.14
-ingv        STACK: SNR50=0.98  SNR90=nan
-experiment  MAX  : SNR50=0.70  SNR90=0.99
-experiment  STACK: SNR50=0.96  SNR90=nan
+ingv        scalar MAX: SNR50=0.68  SNR90=0.97  |  STACK: SNR50=0.95  SNR90=nan
+ingv        vec    MAX: SNR50=0.52  SNR90=0.72  |  STACK: SNR50=0.64  SNR90=1.27
+experiment  scalar MAX: SNR50=0.71  SNR90=0.97  |  STACK: SNR50=1.12  SNR90=nan
+experiment  vec    MAX: SNR50=0.51  SNR90=0.71  |  STACK: SNR50=0.72  SNR90=1.44
 
 Interpretation: the pipeline recovers injected templates above SNR90; it found
 no real detections, so any matching transient in the data is below that level.
+The vector |R| track uses both axes — its SNR90 is the deepest single-station floor.
 High-SNR recovery -> 1.0 validates the search end-to-end.

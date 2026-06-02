@@ -23,6 +23,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from plot_labels import slab, slabs, STATION_LABEL
 from pathlib import Path
 from scipy.signal import spectrogram, butter, sosfiltfilt, welch
 from scipy.stats import kurtosis as excess_kurt
@@ -37,12 +38,13 @@ try:
 except Exception:
     HAVE_PYWT = False
 
+import phd_env                                          # branch-aware OUT / detections / components
 warnings.filterwarnings("ignore")
 BASE = Path("/home/owen/tilt_validation")
 CONT = BASE / "continuous_bandpassed"
-SWCC = BASE / "SWCC_comprehensive"
+SWCC = phd_env.out(BASE / "SWCC_comprehensive")
 OUT  = SWCC / "analysis"
-DETS = SWCC / "continuous" / "all_detections_continuous.csv"
+DETS = phd_env.dets_dir() / "all_detections_continuous.csv"
 VOLC = load_volcanic_events(BASE / "etna_volcanic_events_cleaned.csv")
 PERIODS = {"ingv": ("2022-11-14", "2023-03-01"), "experiment": ("2023-07-23", "2023-08-03")}
 COL = {"max": "#2563eb", "stack": "#f59e0b"}
@@ -77,7 +79,7 @@ def overview(dets):
                                edgecolors="k", linewidths=0.6, label=f"{method} above-floor (screening)")
                 ax.axhline(gm.floor_detect.iloc[0], ls="--", c=COL[method], alpha=0.5, lw=1)
                 ax.axhline(gm.floor_signif.iloc[0], ls="-", c=COL[method], alpha=0.7, lw=1.2)
-            ax.set_ylabel(f"{st}\nscore"); ax.grid(alpha=0.3); ax.legend(fontsize=7, ncol=2, loc="upper right")
+            ax.set_ylabel(f"{slab(st)}\nscore"); ax.grid(alpha=0.3); ax.legend(fontsize=7, ncol=2, loc="upper right")
             ax.set_xlim(pd.Timestamp(PERIODS[ds][0]), pd.Timestamp(PERIODS[ds][1]))
         axes[0, 0].set_title(f"{ds}: detections over time (dashed=detect floor, solid=significance floor"
                              + ("; green=volcanic events)" if ds == "ingv" else ")"))
@@ -98,7 +100,7 @@ def by_station(dets):
             sm = sub[sub.method == method].set_index("station").reindex(stations).fillna(0)
             ax.bar(x + (j-0.5)*w*2, sm.detect, w*2, color=COL[method], alpha=0.4, label=f"{method} detect")
             ax.bar(x + (j-0.5)*w*2, sm.signif, w*2, color=COL[method], label=f"{method} above-floor (screening)")
-        ax.set_xticks(x); ax.set_xticklabels(stations, rotation=30, ha="right")
+        ax.set_xticks(x); ax.set_xticklabels(slabs(stations), rotation=30, ha="right")
         ax.set_ylabel("count"); ax.set_title(f"{ds}: detections vs above-floor (screening) by station")
         ax.legend(fontsize=8, loc="upper right"); ax.grid(axis="y", alpha=0.3)
         ax.set_ylim(top=max(1, sub.detect.max())*1.3)
@@ -132,7 +134,17 @@ RAW_SRC = {
     "EMAS": ("x", "/home/owen/Signals/experiment/school-data/INGV_feather/EMAS.feather", "f"),
 }
 SIM_DIR = Path("/home/owen/Signal_Validation/solid_dofs/tilt")
-_cont_idx, _raw_cache, _noise, _simraw = {}, {}, {}, {}
+DOF_DIR = BASE / "tilt_templates_dofs"          # full-resolution DOF templates (proj_x / √(px²+py²))
+DOF_TEMPLATES = ["template1", "template2", "template3", "template4"]
+_cont_idx, _raw_cache, _noise, _simraw, _dof = {}, {}, {}, {}, {}
+
+
+def _load_dof(ds, st, sim, tn):
+    k = (ds, st, sim, tn)
+    if k not in _dof:
+        f = DOF_DIR / ds / f"{st}_{sim}_{tn}_dof.csv"
+        _dof[k] = pd.read_csv(f) if f.exists() else None
+    return _dof[k]
 
 
 def _tstation(st):
@@ -192,6 +204,9 @@ def _raw_trace(st, comp):
         if comp == "mag":
             v = (pd.to_numeric(d["mag"], errors="coerce").to_numpy() if "mag" in d.columns
                  else np.hypot(pd.to_numeric(d["x"], errors="coerce"), pd.to_numeric(d["y"], errors="coerce")))
+        elif comp == "dir2":                              # Y axis: north (INGV) / y (experiment)
+            ycol = "north" if "north" in d.columns else "y"
+            v = pd.to_numeric(d[ycol], errors="coerce").to_numpy()
         else:
             v = pd.to_numeric(d[col], errors="coerce").to_numpy()
         _raw_cache[k] = pd.Series(v, index=pd.to_datetime(d["datetime"])).sort_index()
@@ -221,12 +236,14 @@ def _best_template(p):
     """Find the bank template that best matches the REAL signal in the MATCHED window
     [peak_time, peak_time+template_len] (peak_time = SWCC window-start). Returns (r, sim, tname, tpl, L)."""
     d = _cont(p.dataset, p.station, p.component); t0 = pd.Timestamp(p.peak_time)
+    comp = {"dir": "dir", "mag": "mag", "dir2": "ortho"}.get(p.component, "dir")   # DOF column prefix
     best = None
     for sim in SIMS:
-        for tn in TEMPLATES:
-            tpl = load_template(p.dataset, p.station, sim, tn)   # load_template maps EEC1→EC1 internally
-            if tpl is None or len(tpl) < 100:
+        for tn in DOF_TEMPLATES:
+            dof = _load_dof(p.dataset, p.station, sim, tn)       # full-res DOF template, component-matched
+            if dof is None:
                 continue
+            tpl = dof[f"{comp}_bp"].to_numpy(); raw = dof[f"{comp}_raw"].to_numpy()
             Ln = len(tpl)
             win = d.loc[t0:t0+pd.Timedelta(seconds=Ln-1)].bandpassed.to_numpy()
             n = min(len(win), Ln)
@@ -236,7 +253,7 @@ def _best_template(p):
                 continue
             r = float(np.corrcoef(a[m], b[m])[0, 1])
             if best is None or abs(r) > abs(best[0]):
-                best = (r, sim, tn, tpl, Ln)
+                best = (r, sim, tn, tpl, raw, Ln)
     return best
 
 
@@ -262,19 +279,17 @@ def _panel(p, cdir, i):
     bt = _best_template(p)
     if bt is None:
         return False
-    r, sim, tn, tpl, L = bt
+    r, sim, tn, tpl, tpl_raw, L = bt                       # tpl = DOF band-passed, tpl_raw = full-res DOF raw
     d = _cont(p.dataset, p.station, p.component); t0 = pd.Timestamp(p.peak_time)
     real_raw = _raw_trace(p.station, p.component).loc[t0:t0+pd.Timedelta(seconds=L-1)].to_numpy()
     real_bp = d.loc[t0:t0+pd.Timedelta(seconds=L-1)].bandpassed.to_numpy()
-    rawsim, rawsim_bp = _raw_sim_bp(p.station, sim)        # template's raw source simulation
-    tpl_raw = rawsim[(off := _match_offset(rawsim_bp, tpl)):off+L] if rawsim is not None else None
     nrow = 4 if HAVE_PYWT else 3
     fig, ax = plt.subplots(nrow, 2, figsize=(13, 2.5*nrow))
     cols = [(f"REAL  {p.station}/{p.component} ({p.method})", real_raw, real_bp, COL[p.method]),
             (f"TEMPLATE  {sim}/{tn}", tpl_raw, tpl, "#b45309")]
     for c, (name, raw, bp, color) in enumerate(cols):
         if raw is not None and len(raw):
-            ax[0, c].plot(np.arange(len(raw))/60, raw-np.nanmean(raw), lw=0.6, color=color)
+            ax[0, c].plot(np.arange(len(raw))/60, np.nan_to_num(raw - np.nanmean(raw)), lw=0.7, color=color)
         else:
             ax[0, c].text(0.5, 0.5, "raw n/a", ha="center", transform=ax[0, c].transAxes)
         ax[0, c].set_title(name, fontsize=10); ax[0, c].grid(alpha=0.3)
@@ -335,8 +350,11 @@ def main():
     if not DETS.exists():
         print(f"  {DETS} not found — run swcc_continuous.py (stage 3) first."); return
     dets = pd.read_csv(DETS, parse_dates=["peak_time"])
+    if "component" in dets.columns:          # real components only (branch-aware); vec → vector_orientation.py
+        dets = dets[dets.component.isin(phd_env.components(["dir", "mag"]))].reset_index(drop=True)
     if dets.empty:
         print("  no detections to plot."); return
+    OUT.mkdir(parents=True, exist_ok=True)
     overview(dets)
     by_station(dets)
     candidates(dets)

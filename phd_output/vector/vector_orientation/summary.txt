@@ -1,0 +1,24 @@
+VECTOR MATCHED FILTER — orientation validation + real-data null
+================================================================
+
+(A) ORIENTATION CONSISTENCY (inject geographic template in the instrument frame,
+    recover with the xlsx rotation m; alignment ratio Re(m·R)/|R| → +1 = correct):
+   ECPN  az_X=  0.0°  |R|=0.979  Re(m·R)=+0.979  alignment=+1.000
+   EEC1  az_X=  0.0°  |R|=0.980  Re(m·R)=+0.980  alignment=+1.000
+   EC1   az_X=122.0°  |R|=0.990  Re(m·R)=+0.990  alignment=+1.000
+   EC10  az_X=122.0°  |R|=0.979  Re(m·R)=+0.979  alignment=+0.999
+   EMAS  az_X=273.0°  |R|=0.982  Re(m·R)=+0.982  alignment=+1.000
+
+   mean alignment ratio = +1.000  (PASS ≈ +1)
+
+(B) REAL-DATA NULL (best-window statistic; both detectors null = no coherent ULP tilt):
+   ECPN  covered=True   |R| median=0.429 95th=0.511  Re(m·R) median=+0.031
+   EEC1  covered=True   |R| median=0.375 95th=0.465  Re(m·R) median=-0.003
+   EC1   covered=True   |R| median=0.392 95th=0.462  Re(m·R) median=+0.027
+   EC10  covered=True   |R| median=0.380 95th=0.486  Re(m·R) median=-0.007
+   EMAS  covered=True   |R| median=0.362 95th=0.463  Re(m·R) median=+0.026
+   ECIT  covered=False  |R| median=0.377 95th=0.490  (|R| only — no orientation)
+   ECOR  covered=False  |R| median=0.414 95th=0.471  (|R| only — no orientation)
+
+Conclusion: the xlsx orientations are reproduced by the vector filter (A ≈ +1), and the
+real-data vector statistic is null whether rotation-invariant (|R|) or oriented (Re(m·R)).

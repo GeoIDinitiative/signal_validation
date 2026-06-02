@@ -1,0 +1,6 @@
+dataset,station,az_X_deg,arg_m_deg,inj_absR,oriented_ReR,alignment_ratio
+ingv,ECPN,0.0,0.0,0.979,0.979,1.0
+ingv,EEC1,0.0,0.0,0.98,0.98,1.0
+experiment,EC1,122.0,148.0,0.99,0.99,1.0
+experiment,EC10,122.0,148.0,0.979,0.979,0.999
+experiment,EMAS,273.0,-3.0,0.982,0.982,1.0

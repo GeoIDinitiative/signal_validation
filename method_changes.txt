@@ -1,0 +1,70 @@
+Here's the full ledger of changes, grouped by where in the chain they sit, as old → new so the actual change is visible. I've split genuinely methodological (the maths/statistics) from procedural (how the workflow is run) at the end.
+
+1. Earthquake / contamination handling
+Cut-first excision → Design-B "analyse-full-then-veto": condition and band-pass the whole record, then veto contaminated peaks in post-processing. Coverage ~28% → ~100%.
+Blanket P-wave cutting → detectability-gated exclusion: only exclude earthquakes actually detectable in-band, via M_min(d) = 5.5 + 1.1·log₁₀(d/1000), magnitude-tiered buffers.
+Added a data-driven in-band STA/LTA veto (0.001–0.01 Hz) — caught the ~57% of in-band contamination the earthquake catalogue missed.
+Forward-only peak veto → symmetric veto: detect() now checks [i−1800 s, i+M] instead of [i, i+M], so bandpass ringing before a correlation peak is also vetoed.
+
+2. Filtering / denoising
+Odd-reflection padding → even-reflection padding (the odd padding blew up the segment END ~7.5×).
+Filtering across gaps → per-segment / gap-aware filtering (never filter through a recording gap).
+No thermal correction → coherence-gated complex admittance H(f) = S_tilt,na/S_na,na with a coherence ≥ 0.3 gate (and we tested it against scalar-β regression; they agree because the coupling is in-phase).
+
+3. Correlation / detection core
+O(N·M) Python loop → vectorized gap-aware, NaN-aware SWCC (FFT + running moments, min_valid_frac=0.8); validated exact to 3e-16.
+Single-template peaks → accumulated bank detector: per-datetime MAX and STACK combine over the 16-template bank, polarity-blind |r|.
+Fixed-threshold (0.2/0.5) → two-tier data-driven null floors (95th = detect, 99th = significance) from phase-randomized surrogates, with find_peaks wired to them.
+Added a network matched filter (coherent cross-station stack, √N gain).
+
+4. Significance / validation (this is where the most was added)
+Phase-randomized (FT surrogate) amplitude null for the floors.
+Circular time-shift permutation null for cross-station synchrony (time-slide analog).
+Injection-recovery (SNR50/SNR90 efficiency) → and the key move: converted the bare null into a quantified physical upper limit (A_min = SNR90 × noise RMS).
+Time-slide FAR, χ² signal-consistency, whitened matched filter, template-bank fitting factor.
+Floor-calibration audit: tested whether the phase-randomized floor is too low for non-Gaussian tilt → hypothesis refuted (SWCC is amplitude-normalized; a circular-shift floor is comparable). Result: reclassified the single-station "significant" flag as "above-floor (screening) only" — real significance = FAR + synchrony + morphology.
+
+5. Search-space robustness probes (added recently)
+Synchrony-window sweep (600 s → 90 min, matched to the sims' own 15–64 min across-station spread) with Bonferroni / look-elsewhere correction.
+Bank densification by time-warp and inter-simulation interpolation; spatial-consistency check of the templates.
+Timing-pattern network detector matched to the sims' predicted inter-station offsets, benchmarked against a simultaneity baseline.
+
+6. Candidate selection & interpretation
+Score-only top-N → ULP-aware multi-indicator ranking: gate on {not vetoed, above-band leakage < 1, kurtosis < 4, impulse-concentration < 0.45}, then rank by a combined figure of merit (r, SNR, leakage, kurtosis, econc). It also applies the veto the old selector ignored — 36–39 of the former top-40 "candidates" were glitches.
+Candidate panels: fixed-center spike view → 4×2 real-vs-template mega-panel (original / denoised / spectrogram / Morlet, for the real signal vs the matching template), with the template's raw "original" recovered by matching it back into its source simulation.
+Component consistency: dir + mag both run; dir/mag de-duplicated within the coincidence tolerance in synchrony.
+
+7. Same-instrument two-period analysis (new)
+Established EEC1 = EC1 (same borehole, two campaigns); LSB/quantisation units proof (same scale, so the ~6–10× winter background is real, not instrumental); identified the tidal band as thermally contaminated (not a clean calibrator).
+
+Net characterisation
+Methodological (algorithm/statistics): Design-B veto logic, detectability + data-driven + symmetric vetoes, even-padding, gap-aware vectorized |r| SWCC, accumulated MAX/STACK, admittance denoising, two-tier surrogate floors, injection→upper-limit, FAR/χ²/whitening/fitting-factor, timing-pattern detector, multi-indicator ULP gating, floor-calibration finding.
+
+Procedural (workflow): consolidation into one 16-stage run_pipeline.py, the experiments kept in a separate tilt_experiments/ folder, the dedicated eec1_ec1_comparison/ and top_templates/ stages, the "significant"→"screening" relabel, publication matplotlibrc/300-dpi standardisation, and git versioning to the signal_validation repo.
+
+The three with the biggest scientific impact: Design-B coverage (28→100%), null → quantified upper limit, and the ULP-aware candidate gating (which exposed that the old "best candidates" were contamination).
+
+
+
+
+Why the change is correct in principle
+A fixed r-threshold has no defined false-alarm probability. r = 0.2 against EEC1's winter noise and r = 0.2 against EC1's summer noise correspond to completely different chances of arising by accident, because the two records have different PSDs, different spectral slopes, and a 12× difference in burstiness (we measured all of this). And r = 0.2 against the short template1 vs the long, smooth template4 means different things again. So a fixed threshold silently mixes "how noisy is this station" with "did we detect something."
+
+Calibrating to the data's own null (95th/99th percentile of the surrogate distribution) holds the false-alarm probability constant instead of holding an arbitrary correlation number constant — which is the statistically meaningful quantity, and is exactly how matched-filter detection is done in seismology and GW astronomy. It also makes cross-station/period comparison fair (exceedances above each record's own noise), which is the whole point of the EEC1-vs-EC1 work. So: fixed thresholds were scientifically indefensible for this; per-station floors are the right framework.
+
+Caveat 1 — the surrogate choice is acceptable here, but only because we checked
+The floors come from phase-randomized surrogates, which preserve the PSD but Gaussianise the amplitudes — and the tilt is wildly non-Gaussian (kurtosis 754). For an amplitude detector that would bias the floor. We're saved because SWCC is amplitude-normalised (Pearson r), so non-Gaussianity doesn't inflate r — and we verified it (the circular-shift floor came out comparable, audit finding C). The one thing phase-randomisation misses is glitch-driven high correlations (it smears transients), so the floor alone can under-state the chance of a spurious high r from a step/spike — which is exactly why the veto + morphology gating sit alongside it. So the floor is correct as one of three layers, not as a standalone guarantee.
+
+Caveat 2 — this is the important one: floor-relative counts are confounded
+Under a correctly calibrated 99th-percentile floor, every template should exceed its own floor ~1% of the time — so a calibrated per-template count is roughly constant by construction, not a measure of match quality. That's why template4 jumping to the top (175 exceedances) is a red flag, not a result: its max |r| is lower (~0.34 vs 0.6–0.7), so more exceedances means its floor is under-estimated and/or its long, smooth |r|(t) series is autocorrelated enough that find_peaks is picking many non-independent peaks. So:
+
+Comparing counts above each template's own floor across templates is not apples-to-apples — it's confounded by floor calibration and effective number of independent windows.
+The cleaner cross-template comparison is the max_r/mean_r panels (absolute correlation strength), which are unaffected by this.
+And the global one we already flagged
+"Above the 99th-pct floor" is a per-window screening statement — under pure noise you expect ~1% of windows to cross it, i.e. many thousands across the record. It is not a trials-corrected detection. We already relabelled the detection-list version "above-floor (screening)"; the same discipline applies to n_signif here. The trustworthy significances remain the time-slide FAR and the circular-shift synchrony, not the raw exceedance counts.
+
+Bottom line
+Moving off fixed 0.2/0.5 to per-station/period/template floors: statistically and scientifically correct, and it should be done. ✓
+It makes thresholds mean something and makes cross-station comparison fair. ✓
+But it does not turn exceedance counts into detections, and it makes cross-template count rankings misleading (the template4 artifact). Those need to be read alongside max_r and the FAR/synchrony, exactly as we've framed them.
+If you want it fully airtight, the right refinement is to stop comparing raw counts and instead report, per (station, template), the excess exceedance rate over the expected 1% (a rate ratio against its own null) — or fold each template into the FAR framework so every count carries a calibrated false-alarm rate. That closes the template4 confound and makes the counts directly comparable. Want me to add that normalisation to the top-template stage?

@@ -24,10 +24,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from pathlib import Path
 
+import phd_env                                # branch-aware OUT / detections
 warnings.filterwarnings("ignore")
 BASE = Path("/home/owen/tilt_validation")
 CONT = BASE / "continuous_bandpassed"
-SWCC = BASE / "SWCC_comprehensive"
+SWCC = phd_env.out(BASE / "SWCC_comprehensive")
 
 
 def snr_at(df, scol, pcol, p=0.9):
@@ -65,20 +66,24 @@ def main():
         a.set(xlabel="% of record analysed", xlim=(0, 100), title="A · Signal coverage (Design B)")
         a.legend(fontsize=8); a.grid(axis="x", alpha=0.3)
 
-    # B. synchrony p-values
+    # B. synchrony p-values  (scalar = dir+mag, vec = vector |R|)
     b = ax[0, 1]
     if not syn.empty:
         s = syn.dropna(subset=["p"])
-        lbl = [f"{r.dataset[:3]}/{r.method}" for _, r in s.iterrows()]
+        has_tr = "track" in s.columns
+        lbl = [f"{r.dataset[:3]}/{r.track}/{r.method}" if has_tr else f"{r.dataset[:3]}/{r.method}"
+               for _, r in s.iterrows()]
         b.bar(lbl, s.p, color=["#16a34a" if p >= 0.05 else "#dc2626" for p in s.p])
         b.axhline(0.05, ls="--", c="k", label="p=0.05")
         b.set(ylabel="synchrony p-value", ylim=(0, 1.05), title="B · Cross-station synchrony vs chance")
         b.legend(fontsize=8); b.grid(axis="y", alpha=0.3); b.tick_params(axis="x", rotation=30)
 
-    # C. detections vs significant
+    # C. detections vs significant  (scalar components only; vec counts reported separately)
     c = ax[1, 0]
-    if not det.empty:
-        g = det.groupby("dataset").agg(max_d=("max_detect","sum"), max_s=("max_signif","sum"),
+    det_sc = (det[det.component.isin(phd_env.components(["dir", "mag"]))]
+              if ("component" in det.columns and not det.empty) else det)
+    if not det_sc.empty:
+        g = det_sc.groupby("dataset").agg(max_d=("max_detect","sum"), max_s=("max_signif","sum"),
                                        stk_d=("stack_detect","sum"), stk_s=("stack_signif","sum")).reset_index()
         x = np.arange(len(g)); w = 0.2
         c.bar(x-1.5*w, g.max_d, w, color="#2563eb", alpha=0.4, label="MAX detect")
@@ -92,10 +97,24 @@ def main():
     # D. sensitivity hierarchy (SNR90)
     d = ax[1, 1]
     bars = {}
+
+    def trk(df, name):
+        return df[df.track == name] if ("track" in df.columns and not df.empty) else df
+
+    def expt(df):
+        return df[df.dataset == "experiment"]
+
+    # generic over whatever tracks exist (legacy: scalar/vec ; branch run: the branch's tracks)
     if not inj.empty:
-        bars["SWCC single"] = snr_at(inj[inj.dataset=="experiment"], "snr", "p_detect_max")
+        for tr in (inj.track.unique() if "track" in inj.columns else [None]):
+            g = expt(inj if tr is None else inj[inj.track == tr])
+            if not g.empty:
+                bars[f"SWCC {tr}" if tr else "SWCC single"] = snr_at(g, "snr", "p_detect_max")
     if not net.empty:
-        bars["Network stack"] = snr_at(net[net.dataset=="experiment"], "snr", "p_network")
+        for tr in (net.track.unique() if "track" in net.columns else [None]):
+            g = expt(net if tr is None else net[net.track == tr])
+            if not g.empty:
+                bars[f"Net {tr}" if tr else "Network stack"] = snr_at(g, "snr", "p_network")
     if not bat.empty:
         for m in ["SUBSPACE", "ENVELOPE", "DTW"]:
             if m in bat.columns:
@@ -113,7 +132,7 @@ def main():
 
     # report.md
     cov_lo, cov_hi = (cov.pct.min(), cov.pct.max()) if not cov.empty else (np.nan, np.nan)
-    sig_tot = int(det[["max_signif","stack_signif"]].sum().sum()) if not det.empty else 0
+    sig_tot = int(det_sc[["max_signif","stack_signif"]].sum().sum()) if not det_sc.empty else 0
     sync_max_p = syn.p.min() if not syn.empty and syn.p.notna().any() else np.nan
     md = [f"# Etna tilt template search — consolidated report", "",
           "## Pipeline (Design B, `run_pipeline.py`)",

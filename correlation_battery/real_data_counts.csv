@@ -1,0 +1,9 @@
+dataset,method,n_windows,n_detect
+ingv,SWCC,59,1
+ingv,SUBSPACE,59,5
+ingv,ENVELOPE,59,1
+ingv,DTW,38,2
+experiment,SWCC,59,2
+experiment,SUBSPACE,59,4
+experiment,ENVELOPE,59,3
+experiment,DTW,38,1
